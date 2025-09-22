@@ -100,7 +100,7 @@ class GeneticAlgorithm:
         toolbox.register("map", self.pool.map)
 
 
-        toolbox.register("evaluate", evaluate)
+        toolbox.register("evaluate", self._evaluate)
 
         toolbox.register("mate", tools.cxTwoPoint)
 
@@ -108,6 +108,26 @@ class GeneticAlgorithm:
         toolbox.register("select", tools.selTournament, tournsize=3) 
 
         return toolbox
+    
+    # --- Evaluation Function ---
+    def _evaluate(self, individual):
+        return (self.fitness_function(individual),)
+    
+    def _diversity(self, pop):
+        """Return the fraction of unique genotypes in the population."""
+        unique = len({ind for ind in pop})
+        return unique / len(pop)
+    
+    def _time_elapsed(self, pop, time_start):
+        time_diff = time.time() - time_start # seconds
+        rd = relativedelta(seconds=time_diff)
+        years = f'{int(rd.years)} y, ' if rd.years > 0 else ''
+        months = f' {int(rd.months)} mon, ' if rd.months > 0 else ''
+        days = f' {int(rd.days)} d' if rd.days > 0 else ''
+        hours = f' {int(rd.hours)} h' if rd.hours > 0 else ''
+        mins = f' {int(rd.minutes)} m' if rd.minutes > 0 else ''
+        secs = f' {int(rd.seconds)} s' if rd.seconds > 0 else ''
+        return f'{years}{months}{days}{hours}{mins}{secs}'
 
 
     def run(self):
@@ -132,9 +152,9 @@ class GeneticAlgorithm:
         stats.register("avg", lambda x: sum(x)/len(x))
         stats.register("min", min)
         stats.register("max", max)
-        stats.register("diversity", diversity)
+        stats.register("diversity", self._diversity)
         # stats.register("first_indi", first_indi)
-        stats.register("time", time_elapsed)
+        stats.register("time", self._time_elapsed)
 
         
 
@@ -151,23 +171,8 @@ class GeneticAlgorithm:
 
 
 
-# --- Evaluation Function ---
-def evaluate(fitness, individual):
-    return (fitness(individual),)
 
 
-def time_elapsed(pop, time_start):
-    time_diff = time.time() - time_start # seconds
-    rd = relativedelta(seconds=time_diff)
-    years = f'{int(rd.years)} y, ' if rd.years > 0 else ''
-    months = f' {int(rd.months)} mon, ' if rd.months > 0 else ''
-    days = f' {int(rd.days)} d' if rd.days > 0 else ''
-    hours = f' {int(rd.hours)} h' if rd.hours > 0 else ''
-    mins = f' {int(rd.minutes)} m' if rd.minutes > 0 else ''
-    secs = f' {int(rd.seconds)} s' if rd.seconds > 0 else ''
-    return f'{years}{months}{days}{hours}{mins}{secs}'
 
-def diversity(pop):
-    """Return the fraction of unique genotypes in the population."""
-    unique = len({ind for ind in pop})
-    return unique / len(pop)
+
+
