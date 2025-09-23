@@ -66,7 +66,7 @@ class GeneticAlgorithm:
     
 
     def ea_simple_with_elitism(self, population, toolbox, stats=None, 
-                            halloffame=None, verbose=True):
+                            halloffame=None, verbose=True) -> Tuple[List, tools.Logbook]:
         """
         Simple evolutionary algorithm with elitism.
 
@@ -85,7 +85,7 @@ class GeneticAlgorithm:
             (final_population, logbook)
         """
         logbook = tools.Logbook()
-        logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+        logbook.header = ['gen', 'nevals'] + (stats.fields if stats else []) # type: ignore
 
         # Evaluate initial population
         invalid = [ind for ind in population if not ind.fitness.valid]
@@ -137,7 +137,7 @@ class GeneticAlgorithm:
 
 
     
-    def run(self) -> Tuple[List, object, object]:
+    def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
         toolbox = self._create_toolbox_and_creator()
 
@@ -149,7 +149,7 @@ class GeneticAlgorithm:
         # Stats & Hall of Fame
         hof = tools.HallOfFame(self.elite_size)
 
-        stats = tools.Statistics(lambda ind: ind.fitness.values[0])
+        stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", lambda x: sum(x)/len(x))
         stats.register("min", min)
         stats.register("max", max)

@@ -32,8 +32,9 @@ class NN:
         self.npNN = np.array(NN)
         self.npSegm = np.cumsum( np.concatenate( [[0], self.npNN[:-1]* self.npNN[1:] * wght_len ]) )
 
-        # self.weights = [NN[i]*NN[i+1] for i in range(len(NN)-1)]
-        # self.biases = [NN[i] for i in range(1,len(NN))] # Max 0..3 * N_inputs
+        self.weight = self.conv_from_indi_to_wght(self.rand_indi())
+        self.summap = self.conv_from_indi_to_summap(self.rand_indi())
+
 
     
     # ============================
@@ -72,9 +73,22 @@ class NN:
     # Forward / Layer
     # ============================
     def cam_neur(self, neur: np.ndarray, wght: np.ndarray) -> np.ndarray: 
-        """CAM LUT lookup."""
-        # The index into the 4‑bit LUT is   idx = a*4 + b  == (a << 2) | b
-        idx: np.ndarray = (wght << 2) | neur          # still uint8, range 0‑15
+        """
+        CAM LUT lookup.
+        
+        Computes index = (wght << 2) | neur
+        which is equivalent to index = wght * 4 + neur,
+        giving values from 0–15 for 2-bit inputs.
+        """
+        # Ensure inputs are uint8
+        neur = neur.astype(np.uint8, copy=False)
+        wght = wght.astype(np.uint8, copy=False)
+        print("wght shape:", wght.shape)
+        print("neur shape:", neur.shape)
+
+
+        # Compute 4-bit LUT index
+        idx: np.ndarray = (wght << 2) | neur # range 0-15
         return self._CAM_LUT[idx]  
     
     def calc_layer(
@@ -83,7 +97,7 @@ class NN:
     layer_pre_idx: int,
     NNwgth: list[np.ndarray],
     NNsummap: list[np.ndarray],
-    verbose: bool=False,
+    verbose: bool=True,
 ) -> np.ndarray:
         """
         Compute the activations of the next layer in a simple feed-forward network.
@@ -128,13 +142,11 @@ class NN:
         
         return neurons_next
     
-    def run_nn(self, inp: np.ndarray, pars: Tuple[List[np.ndarray], List[np.ndarray]]) -> np.ndarray:
+    def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """Forward pass for input vector."""
-        # NN, NNwgth, NNbias, NNsummap = pars
-        NNwgth, NNsummap  = pars
         layer = inp + 1
         for i in range(len(self.NN)-1):
-            layer = self.calc_layer(layer, i, NNwgth, NNsummap)
+            layer = self.calc_layer(layer, i, self.weight, self.summap)
         return (layer>=2).astype(np.uint8)
     
 
@@ -147,16 +159,8 @@ class NN:
     def fitness(self, indi: np.ndarray) -> int:
         Train_D_good, Train_D_bad = self.calc_fitness()
 
-        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good, 
-                                    pars=(self.conv_from_indi_to_wght(indi),  
-                                          self.conv_from_indi_to_summap(indi)))
-        # how_good = on_target(res_g,[1,0])
+        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good)
+        res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad)
 
-        res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad, 
-                                    pars=(self.conv_from_indi_to_wght(indi), 
-                                    self.conv_from_indi_to_summap(indi)))
-        # how_bad = on_target(res_b,[0,1])
-
-        # return how_good + how_bad + np.sum(np.int8(res_g==res_b))
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
     

@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 from sipm_signals.signals import sipm_therm, nois_therm
 from sipm_signals.nn_cam import NN
@@ -9,14 +10,12 @@ def fitness_function(individual: np.ndarray) -> float:
     Higher score if NN correctly distinguishes signal vs noise.
     """
     nn = NN(NN=(2, 8, 2))
-    nnwgth = nn.conv_from_indi_to_wght(individual)
-    nnsummap = nn.conv_from_indi_to_summap(individual)
 
     Train_D_good = np.array([sipm_therm() for _ in range(2)], dtype=np.uint8)
     Train_D_bad = np.array([nois_therm() for _ in range(2)], dtype=np.uint8)
 
-    correct_good = np.sum([np.all(nn.run_nn(x, (nnwgth, nnsummap)) == 1) for x in Train_D_good])
-    correct_bad = np.sum([np.all(nn.run_nn(x, (nnwgth, nnsummap)) == 0) for x in Train_D_bad])
+    correct_good = np.sum([np.all(nn.run_nn(x) == 1) for x in Train_D_good])
+    correct_bad = np.sum([np.all(nn.run_nn(x) == 0) for x in Train_D_bad])
 
     # Combine scores
     score = correct_good + correct_bad
