@@ -128,7 +128,7 @@ class NN:
         
         return neurons_next
     
-    def run_NN(self, inp: np.ndarray, pars: Tuple[List[np.ndarray], List[np.ndarray]]) -> np.ndarray:
+    def run_nn(self, inp: np.ndarray, pars: Tuple[List[np.ndarray], List[np.ndarray]]) -> np.ndarray:
         """Forward pass for input vector."""
         # NN, NNwgth, NNbias, NNsummap = pars
         NNwgth, NNsummap  = pars
@@ -147,12 +147,12 @@ class NN:
     def fitness(self, indi: np.ndarray) -> int:
         Train_D_good, Train_D_bad = self.calc_fitness()
 
-        res_good = np.apply_along_axis(func1d=self.run_NN, axis=1, arr=Train_D_good, 
+        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good, 
                                     pars=(self.conv_from_indi_to_wght(indi),  
                                           self.conv_from_indi_to_summap(indi)))
         # how_good = on_target(res_g,[1,0])
 
-        res_bad = np.apply_along_axis(func1d=self.run_NN, axis=1, arr=Train_D_bad, 
+        res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad, 
                                     pars=(self.conv_from_indi_to_wght(indi), 
                                     self.conv_from_indi_to_summap(indi)))
         # how_bad = on_target(res_b,[0,1])
