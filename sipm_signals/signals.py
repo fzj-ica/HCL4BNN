@@ -1,4 +1,3 @@
-from re import T
 from typing import Tuple
 import numpy as np
 import random
@@ -73,7 +72,7 @@ def sipm_wf() -> Tuple[np.ndarray, np.ndarray]:
     amp =  chrg * (ADC_MAX-ADC_ZERO) * 1.3
     par = [amp,4,14*chrg*random.uniform(1.0,1.4)]
     Dx = np.linspace(-1,ADC_SAMPLES-1,500)
-    Dy = isg(Dx,par) + ADC_ZERO # TODO: par should be tuple
+    Dy = isg(Dx, par) + ADC_ZERO # TODO: par should be tuple
     Dx = Dx - Dx[0]
     return Dx, Dy
 

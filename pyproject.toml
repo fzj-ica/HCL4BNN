@@ -1,0 +1,24 @@
+[project]
+name = "sipm_ga_nn"
+version = "0.1.0"
+description = "SiPM signal simulation and LUT-based neural network optimized with a genetic algorithm"
+authors = [
+    {name = "Alperen Aksoy", email = "a.aksoy@fz-juelich.de"}
+]
+requires-python = ">=3.10"
+keywords = ["sipm", "neural network", "genetic algorithm", "simulation"]
+
+# Dependencies
+dependencies = [
+    "numpy>=1.24",
+    "deap>=1.3",
+    "python-dateutil>=2.8"
+]
+
+[build-system]
+requires = ["setuptools>=65.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*"]
