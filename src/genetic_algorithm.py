@@ -17,9 +17,6 @@ class GeneticAlgorithm:
 
         self.pool = None  # Placeholder for multiprocessing pool if needed
 
-
-
-
     def selTournamentWithFitBracket(self, individuals, k, tournsize, max_fitness = None, min_fitness = None):
         pop = tools.selTournament(individuals, k, tournsize)
         # 2) Replace low-fitness winners
