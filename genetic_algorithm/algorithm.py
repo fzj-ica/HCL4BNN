@@ -64,6 +64,12 @@ class GeneticAlgorithm:
 
         return toolbox
     
+    def _test_toolbox(self, toolbox: base.Toolbox):
+        """Test the toolbox by creating and evaluating a sample individual."""
+        ind = toolbox.individual() # type: ignore
+        print("Sample Individual:", ind)
+        fitness = toolbox.evaluate(ind) # type: ignore
+        print("Sample Fitness:", fitness)
 
     def ea_simple_with_elitism(self, population, toolbox, stats=None, 
                             halloffame=None, verbose=True) -> Tuple[List, tools.Logbook]:
@@ -140,6 +146,7 @@ class GeneticAlgorithm:
     def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
         toolbox = self._create_toolbox_and_creator()
+        self._test_toolbox(toolbox)
 
         print("Create init population...")
         time_start = time.time()
@@ -150,7 +157,7 @@ class GeneticAlgorithm:
         hof = tools.HallOfFame(self.elite_size)
 
         stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register("avg", lambda x: sum(x)/len(x))
+        stats.register("avg", lambda x: sum(x[0])/len(x[0]))
         stats.register("min", min)
         stats.register("max", max)
         stats.register("diversity", diversity)

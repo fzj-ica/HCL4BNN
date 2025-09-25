@@ -10,7 +10,7 @@ ADC_BITS: int = 12
 ADC_SAMPLES: int = 128
 
 ADC_MAX: int  = 2 ** ADC_BITS - 1
-ADC_ZERO: int = 2 ** ( ADC_BITS - 1 ) - 0
+ADC_ZERO: int = 2 ** ( ADC_BITS - 1 ) - 0 # TODO: why -0?
 ADC_MIN: int = 0
 
 
@@ -98,6 +98,33 @@ def nois_adc() -> Tuple[np.ndarray, np.ndarray]:
     Dx = Dx - Dx[0]
     Dy = np.digitize(Dy, np.arange(1,ADC_MAX+1))
     return Dx, Dy
+
+
+# ===============================
+# Debug: 2-Bit
+# ===============================
+def sipm_adc_2bit(): # Debug
+    Dx = np.linspace(-1, ADC_SAMPLES - 2, ADC_SAMPLES)
+    Dy = np.zeros_like(Dx)
+    Dy[Dx >= 64] = ADC_ZERO
+    Dy[Dx < 64] = ADC_MAX
+    Dy = np.digitize(Dy, np.arange(1, ADC_MAX + 1))
+    return Dx, Dy
+
+def nois_adc_2bit(): # Debug
+    Dx = np.linspace(-1, ADC_SAMPLES - 2, ADC_SAMPLES)
+    Dy = np.zeros_like(Dx)
+    Dy[Dx >= 64] = ADC_MAX
+    Dy[Dx < 64] = ADC_ZERO
+    # Dx = Dx - Dx[0]
+    Dy = np.digitize(Dy, np.arange(1,ADC_MAX+1))
+    return Dx, Dy
+
+def sipm_therm_2bit(): # Debug
+    return np.array([0,1])
+
+def nois_therm_2bit(): # Debug
+    return np.array([1,0])
 
 
 # =============================

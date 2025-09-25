@@ -1,6 +1,7 @@
+from abc import abstractmethod
 import numpy as np
 import time
-from typing import List, Tuple
+from typing import Callable, List, Tuple, Optional
 import sipm_signals.signals as adc
 
 class NN:
@@ -22,7 +23,8 @@ class NN:
     ], dtype=np.uint8)  
     
     def __init__(self, NN: Tuple[int, ...] = (2048, 64, 32, 2), 
-                 neur_len: int = 2, bias_len: int = 2, wght_len: int = 2):
+                 neur_len: int = 2, bias_len: int = 2, wght_len: int = 2,
+                 individuals: Optional[np.ndarray] = None):
         self.NN = NN
         self.neur_len = neur_len
         self.bias_len = bias_len
@@ -32,20 +34,19 @@ class NN:
         self.npNN = np.array(NN)
         self.npSegm = np.cumsum( np.concatenate( [[0], self.npNN[:-1]* self.npNN[1:] * wght_len ]) )
 
-        self.weight = self.conv_from_indi_to_wght(self.rand_indi())
-        self.summap = self.conv_from_indi_to_summap(self.rand_indi())
+        if not individuals:
+            individuals = self._rand_indi()
+        self.weight = self.conv_from_indi_to_wght(individuals)
+        self.summap = self.conv_from_indi_to_summap(individuals)
 
 
     
     # ============================
     # Individuals
     # ============================
-    def rand_indi(self) -> np.ndarray:
+    def _rand_indi(self) -> np.ndarray:
         """Generate a random individual (binary array)."""
         return np.random.binomial(1, 0.65, size=self.npSegm[-1])
-    def zero_indi(self) -> np.ndarray:
-        """Generate a zero individual (binary array)."""
-        return np.zeros(self.npSegm[-1])
 
 
     # ============================
@@ -72,6 +73,7 @@ class NN:
     # ============================
     # Forward / Layer
     # ============================
+    # aenderbar
     def cam_neur(self, neur: np.ndarray, wght: np.ndarray) -> np.ndarray: 
         """
         CAM LUT lookup.
@@ -93,6 +95,7 @@ class NN:
     
     def calc_layer(
     self,
+    # TODO: cam_input 
     layer_pre: np.ndarray,
     layer_pre_idx: int,
     NNwgth: list[np.ndarray],
@@ -142,6 +145,7 @@ class NN:
         
         return neurons_next
     
+    # aenderbar
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """Forward pass for input vector."""
         layer = inp + 1
@@ -164,3 +168,4 @@ class NN:
 
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
     
+
