@@ -92,12 +92,19 @@ def nois_adc() -> Tuple[np.ndarray, np.ndarray]:
     """Generate digitised noise waveform (ADC samples)."""
     chrg = random.uniform(0.8,1)
     amp =  chrg * (ADC_MAX*0.01)
-    par = [amp,0.001*chrg*random.uniform(1.0,1.4)]
+    par = [amp, 0.001 * chrg * random.uniform(1.0,1.4)]
     Dx = np.linspace(-1,ADC_SAMPLES-2,ADC_SAMPLES)
-    Dy = nois(Dx,par) + ADC_ZERO # TODO: par should be tuple
+    Dy = nois(Dx, par) + ADC_ZERO # TODO: par should be tuple
     Dx = Dx - Dx[0]
     Dy = np.digitize(Dy, np.arange(1,ADC_MAX+1))
     return Dx, Dy
+
+def double_sipm_adc() -> Tuple[np.ndarray, np.ndarray]:
+    x, y = sipm_adc()
+    x_new = np.random.randint(5, 30)
+    y_new = sipm_adc()[1]
+    y[x_new:] += y_new[:len(x)-x_new] - + ADC_ZERO # TODO: ?
+    return x, y
 
 
 # ===============================
