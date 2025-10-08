@@ -158,6 +158,11 @@ def uint12_to_therm(values: np.ndarray, num_bins: int = 16) -> np.ndarray:
     thermometer = (values[:, None] > thresholds).astype(np.uint8)
     return thermometer
 
+def uint12_to_redint7(values: np.ndarray, num_bits: int = 7) -> np.ndarray:
+    offset = np.clip(np.asarray(values, dtype=np.int16) + 128 - ADC_ZERO, 0, ADC_MAX - ADC_ZERO)
+    reduced = np.right_shift(offset, 12 - num_bits - 1)
+    return reduced
+
 
 def sipm_therm() -> np.ndarray:
     """Generate thermometer encoded SiPM waveform."""
