@@ -19,6 +19,7 @@ def fitness_function(individual: np.ndarray) -> float:
 
     # Combine scores
     score = correct_good + correct_bad
+    print(score)
     return float(score)
 
 # def fitness(nn: NN, indi):
