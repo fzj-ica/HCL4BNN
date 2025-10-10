@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: sipm_ga_nn
+Version: 0.1.0
+Summary: SiPM signal simulation and LUT-based neural network optimized with a genetic algorithm
+Author-email: Alperen Aksoy <a.aksoy@fz-juelich.de>
+Keywords: sipm,neural network,genetic algorithm,simulation
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.24
+Requires-Dist: deap>=1.3
+Requires-Dist: python-dateutil>=2.8
