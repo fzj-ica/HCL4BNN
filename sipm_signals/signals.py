@@ -17,7 +17,7 @@ ADC_MIN: int = 0
 # =============================
 # Core Signal Functions
 # =============================
-def isg(t: np.ndarray, par: tuple[float, float, float]) -> np.ndarray:
+def isg(t: np.ndarray, par: list[float]) -> np.ndarray:
     """ 
     Generate SiPM current signal (IsG)
     
@@ -40,7 +40,7 @@ def isg(t: np.ndarray, par: tuple[float, float, float]) -> np.ndarray:
     signal = amp*(i_slow + i_fast-1)
     return np.where(t < 0, 0, signal) 
 
-def nois(t: np.ndarray, par: tuple[float, float]) -> np.ndarray:
+def nois(t: np.ndarray, par: list[float]) -> np.ndarray:
     """
     Generate noise waveform (Nois)
 
@@ -68,12 +68,12 @@ def nois(t: np.ndarray, par: tuple[float, float]) -> np.ndarray:
 # =============================
 def sipm_wf() -> Tuple[np.ndarray, np.ndarray]:
     """Generate analog SiPM waveform with fine sampling."""
-    chrg = random.uniform(0.1,1)
-    amp =  chrg * (ADC_MAX-ADC_ZERO) * 1.3
-    par = [amp,4,14*chrg*random.uniform(1.0,1.4)]
-    Dx = np.linspace(-1,ADC_SAMPLES-1,500)
-    Dy = isg(Dx, par) + ADC_ZERO # TODO: par should be tuple
-    Dx = Dx - Dx[0]
+    chrg: float = random.uniform(0.1,1)
+    amp: float =  chrg * (ADC_MAX-ADC_ZERO) * 1.3
+    par: list[float] = [amp, 4, 14*chrg*random.uniform(1.0,1.4)]
+    Dx: np.ndarray = np.linspace(-1, ADC_SAMPLES-1, 500)
+    Dy: np.ndarray = isg(Dx, par) + ADC_ZERO # TODO: par should be tuple
+    Dx: np.ndarray = Dx - Dx[0]
     return Dx, Dy
 
 def sipm_adc() -> Tuple[np.ndarray, np.ndarray]:
@@ -103,7 +103,7 @@ def double_sipm_adc() -> Tuple[np.ndarray, np.ndarray]:
     x, y = sipm_adc()
     x_new = np.random.randint(5, 30)
     y_new = sipm_adc()[1]
-    y[x_new:] += y_new[:len(x)-x_new] - + ADC_ZERO # TODO: ?
+    y[x_new:] += y_new[:len(x)-x_new] - ADC_ZERO # TODO: ?
     return x, y
 
 
