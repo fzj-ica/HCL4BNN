@@ -2,7 +2,6 @@
 
 A Python package for training BNNs with Genetic Algorithm.
 
----
 
 ## Installation
 
@@ -12,13 +11,11 @@ Clone the repository:
 git clone git@icagit.zel.kfa-juelich.de:nc_fpga/bnn/sipm_bnn-python-package.git
 ```
 
---- 
 
 ## Usage
 
 There is an example for genearting waveforms in `sipm_signals.ipynb`
 
----
 
 ## Development
 
@@ -28,7 +25,7 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
----
+
 
 ## Documentation (in progress)
 
