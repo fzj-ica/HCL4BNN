@@ -2,7 +2,6 @@ from typing import Callable, List, Optional, Tuple
 from deap import base, creator, tools, algorithms
 import time
 import numpy as np
-from pkg_resources import invalid_marker
 from .utils import time_elapsed, diversity
 
 class GeneticAlgorithm:
