@@ -1,4 +1,3 @@
-from typing import List
 import numpy as np
 from sipm_signals.signals import nois_therm_2bit, sipm_therm, nois_therm, sipm_therm_2bit
 from sipm_signals.nn_cam import NN
