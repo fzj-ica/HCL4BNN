@@ -13,6 +13,16 @@ cd sipm_bnn-python-package
 pip install -e .
 ```
 
+## Project Structure
+``` bash
+.
+├── docs/                # Sphinx Documentation
+├── src/                 # Main source code of the project (Python package)  
+├── notebooks/           # Jupyter notebooks for demos and analysis  
+├── .gitignore           # Git ignore rules for untracked files and directories  
+├── pyproject.toml       # Project metadata, dependencies, and build configuration  
+└── README.md            # Project overview and usage instructions  
+```
 
 ## Usage
 
