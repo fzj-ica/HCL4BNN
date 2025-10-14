@@ -1,7 +1,6 @@
-from abc import abstractmethod
 import numpy as np
 import time
-from typing import Callable, List, Tuple, Optional
+from typing import List, Tuple, Optional
 import sipm_signals.signals as adc
 
 class NN:
