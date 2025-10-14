@@ -16,7 +16,7 @@ pip install -e .
 
 ## Usage
 
-There is an example for genearting waveforms in `sipm_signals.ipynb`
+There is an example for genearting waveforms in `notebooks/sipm_signals.ipynb`
 
 
 ## Documentation (in progress)
