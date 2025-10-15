@@ -22,20 +22,23 @@ class NN:
     ], dtype=np.uint8)  
     
     def __init__(self, NN: Tuple[int, ...] = (2048, 64, 32, 2), 
-                 neur_len: int = 2, bias_len: int = 2, wght_len: int = 2,
+                 neur_len: int = 2, inp_len: int = 7, bias_len: int = 2, wght_len: int = 2,
                  individuals: Optional[np.ndarray] = None):
         self.NN = NN
         self.neur_len = neur_len
         self.bias_len = bias_len
         self.wght_len = wght_len
         self.keep_l = [None]*len(NN)
+        self.inp_len = inp_len
+        self.inp_max = np.uint16((1 << inp_len) - 1)  # max value for inp_len bits 
 
         self.npNN = np.array(NN)
         self.npSegm = np.cumsum( np.concatenate( [[0], self.npNN[:-1]* self.npNN[1:] * wght_len ]) )
 
         if not individuals:
             individuals = self._rand_indi()
-        self.weight = self.conv_from_indi_to_wght(individuals)
+
+        self.weights = self.conv_from_indi_to_wght(individuals)
         self.summap = self.conv_from_indi_to_summap(individuals)
 
 
@@ -92,13 +95,87 @@ class NN:
         idx: np.ndarray = (wght << 2) | neur # range 0-15
         return self._CAM_LUT[idx]  
     
+    
+    def cam_inp(self, inp: np.ndarray, wght: np.ndarray) -> np.ndarray:
+        """
+        Compute the CAM (Content-Addressable Memory) input transformation based on
+        the given input values and weight control signals.
+
+        This function applies one of four operations to each element in `inp`, 
+        depending on the corresponding value in `wght`. The available operations are:
+
+        - **0 → blk**: Returns a zero array of the same shape as `inp`.
+        - **1 → pas**: Pass-through (returns `inp` unchanged).
+        - **2 → inc**: Increments the input by performing a left bit shift (×2),
+        saturated to the maximum value allowed by `inp_len`.
+        - **3 → neg**: Bitwise negation (~x), masked with `inp_max` to stay within
+        the input bit width.
+
+        Parameters
+        ----------
+        inp : np.ndarray
+            Input array representing the input signals to the CAM block.
+        wght : np.ndarray
+            Array of the same shape as `inp` containing control codes (0–3).
+            Each code selects one of the four transformation functions.
+
+        Returns
+        -------
+        np.ndarray
+            The transformed array, where each element of `inp` has been modified
+            according to its corresponding control signal in `wght`.
+
+        Notes
+        -----
+        - The function uses `np.vectorize` internally, so it supports elementwise
+        operations across the entire input array.
+        - The increment operation (`inc`) performs saturation arithmetic, ensuring
+        that results do not exceed the representable range given by `inp_len`.
+        - The negation operation (`neg`) performs a bitwise NOT and applies a mask
+        defined by `inp_max` to stay within valid bit width limits.
+
+        Examples
+        --------
+        >>> inp = np.array([1, 2, 3, 4], dtype=np.uint16)
+        >>> wght = np.array([0, 1, 2, 3], dtype=np.uint8)
+        >>> cam.cam_inp(inp, wght=wght)
+        array([  0,   2,   6, 251], dtype=uint16)
+        """
+
+        def blk(inp):
+            return np.zeros_like(inp)
+
+        def pas(inp):
+            return np.array(inp)
+
+        def inc(inp):
+            x = np.array(inp)
+            # left shift by 1, saturate at max value
+            return np.minimum(x << 1, np.uint16((1 << self.inp_len ) - 1))
+
+        def neg(inp, bits=7):
+            x = np.array(inp)
+            tmp = np.bitwise_not(x) # ~x  
+            result = np.bitwise_and(tmp, self.inp_max)   # (& mask)
+            return result
+        
+        # mapping of weights to functions
+        case4 = {0: blk, 1: pas, 2: inc, 3: neg}
+
+        def CAM_inp_scalar(inpt, wght):
+            return case4[wght](inpt)
+
+        CAM_inp = np.vectorize(CAM_inp_scalar)
+
+        return CAM_inp(inp, wght)
+
     def calc_layer(
     self,
     # TODO: cam_input (CAM_neur oder CAM_input da input anders behandelt wird)
     layer_pre: np.ndarray,
     layer_pre_idx: int,
-    NNwgth: list[np.ndarray],
-    NNsummap: list[np.ndarray],
+    # NNwgth: list[np.ndarray],
+    # NNsummap: list[np.ndarray],
     verbose: bool=True,
 ) -> np.ndarray:
         """
@@ -114,8 +191,16 @@ class NN:
             print(layer_pre.shape)
             time.sleep(0.001)
         # ------------------------------------------------------------------ #
-        weights = NNwgth[layer_pre_idx]
-        weighted = self.cam_neur(layer_pre, weights)
+        layer_weights = self.weights[layer_pre_idx]
+
+        if layer_pre_idx == 0:
+            # weighted = CAM_inp(layer_pre, weights)
+            weighted = self.cam_inp(layer_pre, layer_weights)
+            # weighted = np.fromiter(    (CAM_inp(x, w) for x, w in zip(layer_pre, weights)),    dtype=np.uint8)
+        else:
+            weighted = self.cam_neur(layer_pre, layer_weights)
+
+        
         if verbose:
             print("* weighted:")
             print(weighted.shape)
@@ -128,13 +213,15 @@ class NN:
             print(neuron_sum.shape)
         
         # ------------------------------------------------------------------ #
-        bin_edges = NNsummap[layer_pre_idx]            # shape (n_next, n_bins)
+        bin_edges = self.summap[layer_pre_idx]            # shape (n_next, n_bins)
         if verbose:
             print("* bin_edges:")
             print(bin_edges.shape)
         
 
-        ReLu_2bit = np.array( [ np.digitize(neuron_sum[i], b) for i,b in enumerate(bin_edges) ] )
+        # Digitise using ReLU-like activation (TODO: change for input layer)
+        ReLu_2bit = np.fromiter(    (np.digitize(x, b) for x, b in zip(neuron_sum, bin_edges)),    dtype=np.uint8)
+        # ReLu_2bit = np.array( [ np.digitize(neuron_sum[i], b) for i,b in enumerate(bin_edges) ] )
 
         if verbose:
             print("* ReLu_2bit:")
@@ -144,12 +231,13 @@ class NN:
         
         return neurons_next
     
+    
     # aenderbar
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """Forward pass for input vector."""
         layer = inp + 1
         for i in range(len(self.NN)-1):
-            layer = self.calc_layer(layer, i, self.weight, self.summap)
+            layer = self.calc_layer(layer, i)
         return (layer>=2).astype(np.uint8)
     
 
