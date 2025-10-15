@@ -171,11 +171,8 @@ class NN:
 
     def calc_layer(
     self,
-    # TODO: cam_input (CAM_neur oder CAM_input da input anders behandelt wird)
     layer_pre: np.ndarray,
     layer_pre_idx: int,
-    # NNwgth: list[np.ndarray],
-    # NNsummap: list[np.ndarray],
     verbose: bool=True,
 ) -> np.ndarray:
         """
