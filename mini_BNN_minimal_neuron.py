@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
 
 # minimal
 import numpy as np
@@ -28,18 +26,6 @@ plt.rcParams['figure.facecolor']='white'
 plt.rcParams['savefig.facecolor']='white'
 
 get_ipython().run_line_magic('matplotlib', 'inline')
-
-
-# In[ ]:
-
-
-
-
-
-# # SIM ADC Input
-
-# In[2]:
-
 
 import numpy as np
 
@@ -77,24 +63,12 @@ def SiPM_ADC():
     return Dx, Dy
 
 
-# In[3]:
-
-
 def DoubleSiPM_ADC():
     x,y = SiPM_ADC()
     xnew = np.random.randint(5,30)
     ynew = SiPM_ADC()[1]
     y[ xnew: ] += ynew[:len(x)-xnew] - + ADC_ZERO
     return x,y
-
-
-# In[ ]:
-
-
-
-
-
-# In[4]:
 
 
 def Nois(t, par):
@@ -115,20 +89,10 @@ def Nois_ADC():
     return Dx, Dy
 
 
-
-# In[5]:
-
-
 def uint12_to_redint7(values, num_bits = 7):
     offset = np.clip( np.asarray(values, dtype=np.uint16) + 128 - ADC_ZERO ,0,ADC_MAX - ADC_ZERO)
     red = np.right_shift( offset,(12-num_bits-1))
     return red 
-
-
-
-# ## Generic input simulation functions for 2 classes
-
-# In[6]:
 
 
 def SiPM_inp():
@@ -140,16 +104,6 @@ def Nois_inp():
     return uint12_to_redint7( DoubleSiPM_ADC()[1] )
 
 
-# In[7]:
-
-
-SiPM_lbl = "Good"
-Nois_lbl = "Ugly" # "Double"
-
-
-
-# In[8]:
-
 
 # for constraining/validating the network
 def rand_inp():
@@ -158,8 +112,6 @@ def rand_inp():
     return np.random.randint(low=uint12_to_redint7(ADC_ZERO), high=uint12_to_redint7(ADC_MAX), size=ADC_smpls)
 
 
-
-# In[9]:
 
 
 lenTrain_D_good = 50
@@ -205,17 +157,8 @@ def gen_Data(good=lenTrain_D_good, bad=lenTrain_D_bad, min_amp = 10, ADC_smpls=A
 
 Train_D_good, Train_D_bad = gen_Data()
 
-Train_D_good.shape, Train_D_bad.shape,
-
-
-# In[10]:
-
-
 SiPM_NNout = [1,0]
 Nois_NNout = [0,1]
-
-
-# In[11]:
 
 
 class_nr = {(0,1):0,(1,0):1,(1,1):2,(0,0):2}
@@ -232,11 +175,6 @@ SiPM_num_lbl, Nois_num_lbl = tuple_to_label([SiPM_NNout])[0], tuple_to_label([No
 
 
 # # Define NN
-
-# In[12]:
-
-
-# NN input paramters bit
 
 # in bits
 inp_len = 7
@@ -255,13 +193,8 @@ NN = np.array(NN)
 keep_l = [None]*len(NN) # only needed at VHDL conversion step
 
 
-# In[13]:
-
 
 NNdescr = "Good_vs_Double"
-
-
-# In[14]:
 
 
 NNstr = NNdescr + " Net: " + "-".join(map(str,NN)) + f", (inp,neur,wght) bits: ({inp_len},{neur_len},{wght_len})"
@@ -269,16 +202,12 @@ NNstr = NNdescr + " Net: " + "-".join(map(str,NN)) + f", (inp,neur,wght) bits: (
 NNstr
 
 
-# In[15]:
-
 
 NNfile = NNdescr + "_NN_" + "-".join(map(str,NN)) + f"__inp-neur-wght_bits__{inp_len}-{neur_len}-{wght_len}"
 NNfile
 
 
 # # Make Indi
-
-# In[16]:
 
 
 npSegm = np.cumsum( np.concatenate( [[0], NN[:-1]* NN[1:] * wght_len ]) )
@@ -309,9 +238,6 @@ indi = rand_indi()
 
 
 
-# In[17]:
-
-
 def conv_from_indi_to_wght(indi):
     arr =  np.array( indi ).astype(np.int8)
     wghtlist = [] 
@@ -326,9 +252,6 @@ def conv_from_indi_to_wght(indi):
     return wghtlist
 
 indi = rand_indi()
-
-
-# In[18]:
 
 
 def conv_from_indi_to_summap(indi):
@@ -347,13 +270,9 @@ conv_from_indi_to_summap(indi)
 
 # # Python NN Forward calc 
 
-# In[19]:
-
 
 verbose = False
 
-
-# In[20]:
 
 
 _CAM_LUT = np.array([ # with input 0, 1, 2 ,3
@@ -370,10 +289,6 @@ def CAM_neur(neur: np.ndarray, wght: np.ndarray) -> np.ndarray:
     return _CAM_LUT[idx]            # vectorised lookup, result shape = (n_next,)
 
 
-# In[21]:
-
-
-# dtype = np.uint16
 
 def blk(inp):
     return np.zeros_like(inp)#, dtype=dtype)
@@ -406,8 +321,6 @@ CAM_inp = np.vectorize(CAM_inp_scalar)
 
 
 # ### Calc Layer
-
-# In[22]:
 
 
 import time
