@@ -1,6 +1,7 @@
 import numpy as np
 import time
-from typing import List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional
+from .individuals import rand_indi, conv_from_indi_to_wght, conv_from_indi_to_summap
 import sipm_signals.signals as adc
 
 class NN:
@@ -21,10 +22,10 @@ class NN:
     3, 2, 1, 0,   # bias = 3, n = 0..3
     ], dtype=np.uint8)  
     
-    def __init__(self, NN: Tuple[int, ...] = (2048, 64, 32, 2), 
+    def __init__(self, NN: Tuple[int, ...] = (128, 16, 128, 2), 
                  neur_len: int = 2, inp_len: int = 7, bias_len: int = 2, wght_len: int = 2,
-                 individuals: Optional[np.ndarray] = None):
-        self.NN = NN
+                 individuals: Optional[np.ndarray] = None, description: Optional[str] = None):
+        self.NN = np.array(NN)
         self.neur_len = neur_len
         self.bias_len = bias_len
         self.wght_len = wght_len
@@ -32,45 +33,22 @@ class NN:
         self.inp_len = inp_len
         self.inp_max = np.uint16((1 << inp_len) - 1)  # max value for inp_len bits 
 
-        self.npNN = np.array(NN)
-        self.npSegm = np.cumsum( np.concatenate( [[0], self.npNN[:-1]* self.npNN[1:] * wght_len ]) )
+        self.segm = np.cumsum( np.concatenate( [[0], self.NN[:-1] * self.NN[1:] * wght_len ]) )
 
         if not individuals:
-            individuals = self._rand_indi()
+            individuals = rand_indi(size=self.segm[-1])
 
-        self.weights = self.conv_from_indi_to_wght(individuals)
-        self.summap = self.conv_from_indi_to_summap(individuals)
+        self.description = description if description else "NN"
+
+        # TODO: has to be done for every new individual
+        self.weights = conv_from_indi_to_wght(self, individuals)
+        self.summap = conv_from_indi_to_summap(self, individuals)
 
 
+    def __str__(self) -> str:
+        return f"{self.description} Net: {self.NN}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit, Bias: {self.bias_len}-bit"
     
-    # ============================
-    # Individuals
-    # ============================
-    def _rand_indi(self) -> np.ndarray:
-        """Generate a random individual (binary array)."""
-        return np.random.binomial(1, 0.65, size=self.npSegm[-1])
-
-
-    # ============================
-    # Conversions
-    # ============================
-    def conv_from_indi_to_wght(self, indi: np.ndarray) -> List[np.ndarray]:
-        """Convert binary individual to 2-bit weight matrices per layer."""
-        arr =  np.array(indi, dtype=np.int8)
-        wghtlist: List[np.ndarray] = [] 
-        for i,s in enumerate( zip( self.npSegm [:len(self.npNN)+1],  self.npSegm [1:len(self.npNN)] ) ):
-            iwght = arr[slice(*s)].reshape([self.npNN[i+1], self.npNN[i],2])
-            iwght_2bit = (iwght[:,:,0]) | (iwght[:,:,1] << 1)
-            wghtlist.append(iwght_2bit)
-        return wghtlist
-
-    def conv_from_indi_to_summap(self, indi: np.ndarray) -> List[np.ndarray]:
-        """Compute sum maps for ReLU digitisation."""
-        summap: List[np.ndarray] = []
-        for i in range(0,len(self.NN)-1):
-            nonzero = (self.npNN[i] - np.uint8(self.conv_from_indi_to_wght(indi)[i] == 0).sum(axis = 1))
-            summap.append(np.array(nonzero[:, np.newaxis] * [0.5, 1.5, 2.5], dtype=np.uint16))
-        return summap
+    
     
     # ============================
     # Forward / Layer
@@ -89,7 +67,6 @@ class NN:
         wght = wght.astype(np.uint8, copy=False)
         print("wght shape:", wght.shape)
         print("neur shape:", neur.shape)
-
 
         # Compute 4-bit LUT index
         idx: np.ndarray = (wght << 2) | neur # range 0-15
@@ -151,9 +128,9 @@ class NN:
         def inc(inp):
             x = np.array(inp)
             # left shift by 1, saturate at max value
-            return np.minimum(x << 1, np.uint16((1 << self.inp_len ) - 1))
+            return np.minimum(x << 1, self.inp_max)
 
-        def neg(inp, bits=7):
+        def neg(inp):
             x = np.array(inp)
             tmp = np.bitwise_not(x) # ~x  
             result = np.bitwise_and(tmp, self.inp_max)   # (& mask)
@@ -191,13 +168,10 @@ class NN:
         layer_weights = self.weights[layer_pre_idx]
 
         if layer_pre_idx == 0:
-            # weighted = CAM_inp(layer_pre, weights)
             weighted = self.cam_inp(layer_pre, layer_weights)
-            # weighted = np.fromiter(    (CAM_inp(x, w) for x, w in zip(layer_pre, weights)),    dtype=np.uint8)
         else:
             weighted = self.cam_neur(layer_pre, layer_weights)
 
-        
         if verbose:
             print("* weighted:")
             print(weighted.shape)
@@ -229,13 +203,15 @@ class NN:
         return neurons_next
     
     
-    # aenderbar
+    # aenderbar (je nach input und output layer)
+    # eher separates pre- und post-processing der Daten
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """Forward pass for input vector."""
+        # layer = layer_inp(inp)
         layer = inp + 1
         for i in range(len(self.NN)-1):
             layer = self.calc_layer(layer, i)
-        return (layer>=2).astype(np.uint8)
+        return (layer >= 2).astype(np.uint8)
     
 
     def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
