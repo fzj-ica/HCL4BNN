@@ -100,10 +100,24 @@ def nois_adc() -> Tuple[np.ndarray, np.ndarray]:
     return Dx, Dy
 
 def double_sipm_adc() -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Generates a synthetic SiPM ADC signal by combining two signals with a random offset.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: 
+            - x: The time or sample indices of the ADC signal.
+            - y: The combined ADC signal values after adding a second signal with a random offset and adjusting by ADC_ZERO.
+
+    Notes:
+        - The function calls `sipm_adc()` twice to obtain two signals.
+        - A random integer offset between 5 and 30 is chosen to determine where the second signal is added to the first.
+        - The second signal is added to the first signal starting from the random offset, and adjusted by subtracting `ADC_ZERO`.
+        - Assumes `sipm_adc` and `ADC_ZERO` are defined elsewhere in the module.
+    """
     x, y = sipm_adc()
     x_new = np.random.randint(5, 30)
     y_new = sipm_adc()[1]
-    y[x_new:] += y_new[:len(x)-x_new] - ADC_ZERO # TODO: ?
+    y[x_new:] += y_new[:len(x)-x_new] - ADC_ZERO
     return x, y
 
 
@@ -194,3 +208,8 @@ def skw(p: float = 0.2) -> int:
         1 with probability (1-p), 0 with probability p.
     """
     return 1 if random.random() > p else 0
+
+
+# TODO:
+# sipm_inp() and nois_inp() are generic
+# sipm label and nois label
