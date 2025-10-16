@@ -172,7 +172,22 @@ def uint12_to_therm(values: np.ndarray, num_bins: int = 16) -> np.ndarray:
     thermometer = (values[:, None] > thresholds).astype(np.uint8)
     return thermometer
 
-def uint12_to_redint7(values: np.ndarray, num_bits: int = 7) -> np.ndarray:
+def uint12_to_redint(values: np.ndarray, num_bits: int = 7) -> np.ndarray:
+    """
+    Convert 12-bit unsigned integer ADC values to a reduced integer representation with fewer bits.
+
+    Parameters
+    ----------
+    values : np.ndarray
+        Input array of 12-bit unsigned integer ADC values.
+    num_bits : int, optional
+        Number of bits for the reduced integer representation (default is 7).
+
+    Returns
+    -------
+    np.ndarray
+        Array of reduced integer values with the specified number of bits.
+    """
     offset = np.clip(np.asarray(values, dtype=np.int16) + 128 - ADC_ZERO, 0, ADC_MAX - ADC_ZERO)
     reduced = np.right_shift(offset, 12 - num_bits - 1)
     return reduced
@@ -189,6 +204,65 @@ def nois_therm() -> np.ndarray:
     x,y = nois_adc()
     return np.ravel( uint12_to_therm( y + 128 - ADC_ZERO ) )
 
+
+
+# ================================================
+# Generic input simulation functions for 2 classes
+# ================================================
+
+# TODO:
+# sipm_inp() and nois_inp() are generic
+# sipm label and nois label
+
+SIPM_LABEL = "Good"
+NOIS_LABEL = "Ugly" # "Double"
+
+def sipm_inp():
+    return uint12_to_redint( sipm_adc()[1] )
+
+def nois_inp():
+    return uint12_to_redint( double_sipm_adc()[1] )
+
+# for constraining/validating the network
+def rand_inp():
+    return np.random.randint(
+        low=uint12_to_redint(np.array([ADC_ZERO])),
+        high=uint12_to_redint(np.array([ADC_MAX])),
+        size=ADC_SAMPLES
+    )
+
+# =============================
+# Data generation
+# =============================
+
+def distill_uniform(arr: np.ndarray, min_amp: int = 10, sample_size: int = 100):
+    arr = arr[np.max(arr, axis=1) >= min_amp]
+    maxima = np.max(arr, axis=1)
+    num_bins = 50
+    bins = np.linspace(np.min(maxima), np.max(maxima), num_bins + 1)
+    idx = np.digitize(maxima, bins) - 1
+    counts = np.bincount(idx, minlength=num_bins)
+    weights = 1.0 / counts[idx]
+    weights /= np.sum(weights)  # normalize
+    k = sample_size
+    sample_indices = np.random.choice(range(len(arr)), size=k, p=weights)
+
+    return arr[sample_indices]
+
+
+def gen_Data(good: int = 50, bad: int = 50, min_amp: int = 10, ADC_smpls: int =ADC_SAMPLES): # used to be dependent on NN[0], but = ADC_smpls
+    Train_D_good = np.empty((good*20, ADC_smpls), dtype=np.uint8)
+    for i in range(good*20):
+        Train_D_good[i,:] = sipm_inp()
+    
+    Train_D_bad = np.empty((bad*20, ADC_smpls), dtype=np.uint8)
+    for i in range(bad*20):
+        Train_D_bad[i,:] = nois_inp()
+
+    Train_D_good = distill_uniform(Train_D_good, min_amp = min_amp, sample_size = good)
+    Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = min_amp, sample_size = bad)
+
+    return Train_D_good, Train_D_bad
 
 # =============================
 # Utility
@@ -210,6 +284,3 @@ def skw(p: float = 0.2) -> int:
     return 1 if random.random() > p else 0
 
 
-# TODO:
-# sipm_inp() and nois_inp() are generic
-# sipm label and nois label
