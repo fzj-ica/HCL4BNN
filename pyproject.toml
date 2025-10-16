@@ -23,6 +23,9 @@ dependencies = [
 requires = ["setuptools>=65.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
 [tool.setuptools.packages.find]
-where = ["."]
-exclude = ["tests*"]
+where = ["src"]
+include = ["sipm_signals*", "genetic_algorithm*"]
