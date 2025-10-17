@@ -210,11 +210,12 @@ def nois_therm() -> np.ndarray:
 # Generic input simulation functions for 2 classes
 # ================================================
 
+# TODO: maybe better to use enums
 CLASSIFICATION  = "Signal"
-Signal_LABLES   = ["Good", "Ugly"] #, "Bad"]
-Signal_LABLE_Other = "Either"
-Signal_OUTCOMES = [[1,0], [0,1]]
-Signal_DICT_tuple_to_label = dict( zip([tuple(l) for l in Signal_OUTCOMES], Signal_LABLES) )
+SIGNAL_LABLES   = ["Good", "Ugly"] #, "Bad"]
+SIGNAL_LABLE_OTHER = "Either"
+SIGNAL_OUTCOMES = [[1,0], [0,1]]
+SIGNAL_DICT_TUPLE_TO_LABEL = dict( zip([tuple(l) for l in SIGNAL_OUTCOMES], SIGNAL_LABLES) )
 
 #CLASSIFICATION = "MNIST"
 #MNIST_LABLES   = [str(i) for i in range(10)]
@@ -222,15 +223,11 @@ Signal_DICT_tuple_to_label = dict( zip([tuple(l) for l in Signal_OUTCOMES], Sign
 #MNIST_OUTCOMES = np.diag(np.ones(len(MNIST_LABLES), dtype=np.uint8)) # one-hot
 #MNIST_DICT_tuple_to_label = dict( zip([tuple(l) for l in MNIST_OUTCOMES], MNIST_LABLES) )
 
-def tuple_to_label(outcome: list) -> str:
-    "return label or other"
-    return Signal_DICT_tuple_to_label.get(tuple(outcome) , Signal_LABLE_Other )
 
-
-def Signal_Good_inp():
+def signal_good_inp():
     return uint12_to_redint( sipm_adc()[1] )
 
-def Signal_Ugly_inp():
+def signal_ugly_inp():
     return uint12_to_redint( double_sipm_adc()[1] )
 
 # for constraining/validating the network
@@ -263,11 +260,11 @@ def distill_uniform(arr: np.ndarray, min_amp: int = 10, sample_size: int = 100):
 def gen_Data_Labled(n_frames: int = 50, min_amp: int = 10, ADC_smpls: int =ADC_SAMPLES): # used to be dependent on NN[0], but = ADC_smpls
     Train_D_good = np.empty((n_frames*20, ADC_smpls), dtype=np.uint8)
     for i in range(n_frames*20):
-        Train_D_good[i,:] = Signal_Good_inp()
+        Train_D_good[i,:] = signal_good_inp()
     
     Train_D_bad = np.empty((n_frames*20, ADC_smpls), dtype=np.uint8)
     for i in range(n_frames*20):
-        Train_D_bad[i,:] = Signal_Ugly_inp()
+        Train_D_bad[i,:] = signal_ugly_inp()
 
     Train_D_good = distill_uniform(Train_D_good, min_amp = min_amp, sample_size = n_frames)
     Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = min_amp, sample_size = n_frames)
@@ -276,8 +273,8 @@ def gen_Data_Labled(n_frames: int = 50, min_amp: int = 10, ADC_smpls: int =ADC_S
         Train_D_good, 
         Train_D_bad
       ]) , np.concatenate([
-        np.tile(Signal_OUTCOMES[0], (len(Train_D_good) , 1)) , 
-        np.tile(Signal_OUTCOMES[1], (len(Train_D_bad)  , 1))
+        np.tile(SIGNAL_OUTCOMES[0], (len(Train_D_good) , 1)) , 
+        np.tile(SIGNAL_OUTCOMES[1], (len(Train_D_bad)  , 1))
       ])      
 
 # =============================
