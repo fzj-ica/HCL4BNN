@@ -210,21 +210,31 @@ def nois_therm() -> np.ndarray:
 # Generic input simulation functions for 2 classes
 # ================================================
 
-# TODO:
-# sipm_inp() and nois_inp() are generic
-# sipm label and nois label
+CLASSIFICATION  = "Signal"
+Signal_LABLES   = ["Good", "Ugly"] #, "Bad"]
+Signal_LABLE_Other = "Either"
+Signal_OUTCOMES = [[1,0], [0,1]]
+Signal_DICT_tuple_to_label = dict( zip([tuple(l) for l in Signal_OUTCOMES], Signal_LABLES) )
 
-SIPM_LABEL = "Good"
-NOIS_LABEL = "Ugly" # "Double"
+#CLASSIFICATION = "MNIST"
+#MNIST_LABLES   = [str(i) for i in range(10)]
+#MNIST_LABLE_Other = str(MNIST_LABLES) # none-of-the-above label=next spare number
+#MNIST_OUTCOMES = np.diag(np.ones(len(MNIST_LABLES), dtype=np.uint8)) # one-hot
+#MNIST_DICT_tuple_to_label = dict( zip([tuple(l) for l in MNIST_OUTCOMES], MNIST_LABLES) )
 
-def sipm_inp():
+def tuple_to_label(outcome: list) -> str:
+    "return label or other"
+    return Signal_DICT_tuple_to_label.get(tuple(outcome) , Signal_LABLE_Other )
+
+
+def Signal_Good_inp():
     return uint12_to_redint( sipm_adc()[1] )
 
-def nois_inp():
+def Signal_Ugly_inp():
     return uint12_to_redint( double_sipm_adc()[1] )
 
 # for constraining/validating the network
-def rand_inp():
+def other_inp():
     return np.random.randint(
         low=uint12_to_redint(np.array([ADC_ZERO])),
         high=uint12_to_redint(np.array([ADC_MAX])),
@@ -250,19 +260,25 @@ def distill_uniform(arr: np.ndarray, min_amp: int = 10, sample_size: int = 100):
     return arr[sample_indices]
 
 
-def gen_Data(good: int = 50, bad: int = 50, min_amp: int = 10, ADC_smpls: int =ADC_SAMPLES): # used to be dependent on NN[0], but = ADC_smpls
-    Train_D_good = np.empty((good*20, ADC_smpls), dtype=np.uint8)
-    for i in range(good*20):
-        Train_D_good[i,:] = sipm_inp()
+def gen_Data_Labled(n_frames: int = 50, min_amp: int = 10, ADC_smpls: int =ADC_SAMPLES): # used to be dependent on NN[0], but = ADC_smpls
+    Train_D_good = np.empty((n_frames*20, ADC_smpls), dtype=np.uint8)
+    for i in range(n_frames*20):
+        Train_D_good[i,:] = Signal_Good_inp()
     
-    Train_D_bad = np.empty((bad*20, ADC_smpls), dtype=np.uint8)
-    for i in range(bad*20):
-        Train_D_bad[i,:] = nois_inp()
+    Train_D_bad = np.empty((n_frames*20, ADC_smpls), dtype=np.uint8)
+    for i in range(n_frames*20):
+        Train_D_bad[i,:] = Signal_Ugly_inp()
 
-    Train_D_good = distill_uniform(Train_D_good, min_amp = min_amp, sample_size = good)
-    Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = min_amp, sample_size = bad)
+    Train_D_good = distill_uniform(Train_D_good, min_amp = min_amp, sample_size = n_frames)
+    Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = min_amp, sample_size = n_frames)
 
-    return Train_D_good, Train_D_bad
+    return np.concatenate([
+        Train_D_good, 
+        Train_D_bad
+      ]) , np.concatenate([
+        np.tile(Signal_OUTCOMES[0], (len(Train_D_good) , 1)) , 
+        np.tile(Signal_OUTCOMES[1], (len(Train_D_bad)  , 1))
+      ])      
 
 # =============================
 # Utility
