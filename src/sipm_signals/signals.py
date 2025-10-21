@@ -212,6 +212,7 @@ def nois_therm() -> np.ndarray:
 
 # TODO: maybe better to use enums
 CLASSIFICATION  = "Signal"
+
 SIGNAL_LABLES   = ["Good", "Ugly"] #, "Bad"]
 SIGNAL_LABLE_OTHER = "Either"
 SIGNAL_OUTCOMES = [[1,0], [0,1]]
