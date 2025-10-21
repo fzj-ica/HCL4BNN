@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from typing import Callable, List, Tuple, Optional
+from typing import Tuple, Optional
 from .individuals import rand_indi, conv_from_indi_to_wght, conv_from_indi_to_summap
 import sipm_signals.signals as adc
 
@@ -60,7 +60,7 @@ class NN:
         
         Computes index = (wght << 2) | neur
         which is equivalent to index = wght * 4 + neur,
-        giving values from 0–15 for 2-bit inputs.
+        giving values from 0-15 for 2-bit inputs.
         """
         # Ensure inputs are uint8
         neur = neur.astype(np.uint8, copy=False)
@@ -205,14 +205,34 @@ class NN:
     
     # aenderbar (je nach input und output layer)
     # eher separates pre- und post-processing der Daten
+    # def run_nn(self, inp: np.ndarray) -> np.ndarray:
+    #     """Forward pass for input vector."""
+    #     # layer = layer_inp(inp)
+    #     layer = inp + 1
+    #     for i in range(len(self.NN)-1):
+    #         layer = self.calc_layer(layer, i)
+    #     return (layer >= 2).astype(np.uint8)
+
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """Forward pass for input vector."""
-        # layer = layer_inp(inp)
-        layer = inp + 1
+        layer = inp
         for i in range(len(self.NN)-1):
             layer = self.calc_layer(layer, i)
-        return (layer >= 2).astype(np.uint8)
+        return layer
     
+    def run_nn_from_indi(self, data, indi):
+        """Run NN with weights from individual on given data."""
+        old_weights = self.weights
+        old_summap = self.summap
+        self.weights = conv_from_indi_to_wght(self, indi)
+        self.summap = conv_from_indi_to_summap(self, indi)
+        result = np.apply_along_axis(self.run_nn, axis=1, arr=data)
+        self.weights = old_weights
+        self.summap = old_summap
+        return result
+    
+    # TODO: pre- and post-processing of data
+
 
     def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
         """Return SiPM (good) and noise (bad) training data."""
