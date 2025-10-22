@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 from .individuals import rand_indi, conv_from_indi_to_wght, conv_from_indi_to_summap
 import sipm_signals.signals as adc
 
@@ -220,16 +220,6 @@ class NN:
             layer = self.calc_layer(layer, i)
         return layer
     
-    def run_nn_from_indi(self, data, indi):
-        """Run NN with weights from individual on given data."""
-        old_weights = self.weights
-        old_summap = self.summap
-        self.weights = conv_from_indi_to_wght(self, indi)
-        self.summap = conv_from_indi_to_summap(self, indi)
-        result = np.apply_along_axis(self.run_nn, axis=1, arr=data)
-        self.weights = old_weights
-        self.summap = old_summap
-        return result
     
     # TODO: pre- and post-processing of data
 
@@ -248,4 +238,34 @@ class NN:
 
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
     
+    def diversity_score(self, res_g, res_b):
+       assert len(res_g)==len(res_b), f"{len(res_g)} {len(res_b)}"
+       return np.sum(np.uint8(res_g != res_b)) / 2 / len(res_g)
+ 
 
+
+    # ========================
+    # Individual conversions
+    # ========================
+
+    def get_rand_indi(self, size) -> np.ndarray:
+        """Generate a random individual (binary array)."""
+        return np.random.binomial(1, 0.65, size=size)
+
+    def conv_from_indi_to_wght(self, indi: np.ndarray) -> List[np.ndarray]:
+        """Convert binary individual to 2-bit weight matrices per layer."""
+        arr =  np.array(indi, dtype=np.int8)
+        wghtlist: List[np.ndarray] = [] 
+        for i,s in enumerate( zip( self.segm [:len(self.NN)+1],  self.segm [1:len(self.NN)] ) ):
+            iwght = arr[slice(*s)].reshape([self.NN[i+1], self.NN[i],2])
+            iwght_2bit = (iwght[:, :, 0]) | (iwght[:, :, 1] << 1)
+            wghtlist.append(iwght_2bit)
+        return wghtlist
+
+    def conv_from_indi_to_summap(self, indi: np.ndarray) -> List[np.ndarray]:
+        """Compute sum maps for ReLU digitisation."""
+        summap: List[np.ndarray] = []
+        for i in range(0, len(self.NN) - 1):
+            nonzero = (self.NN[i] - np.uint8(conv_from_indi_to_wght(self, indi)[i] == 0).sum(axis = 1))
+            summap.append(np.array(nonzero[:, np.newaxis] * [0.5, 1.5, 2.5], dtype=np.uint16))
+        return summap
