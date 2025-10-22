@@ -19,17 +19,6 @@ class SiPM(Input):
 
 
     # =============================
-    # Global Constants
-    # =============================
-    ADC_BITS: int = 12
-    ADC_SAMPLES: int = 128
-
-    ADC_MAX: int  = 2 ** ADC_BITS - 1
-    ADC_ZERO: int = 2 ** ( ADC_BITS - 1 ) - 0 # TODO: why -0?
-    ADC_MIN: int = 0
-
-
-    # =============================
     # Core Signal Functions
     # =============================
     def isg(self, t: np.ndarray, par: list[float]) -> np.ndarray:
@@ -258,27 +247,15 @@ class SiPM(Input):
     # Data generation
     # =============================
 
-    def distill_uniform(self, arr: np.ndarray, min_amp: int = 10, sample_size: int = 100):
-        arr = arr[np.max(arr, axis=1) >= min_amp]
-        maxima = np.max(arr, axis=1)
-        num_bins = 50
-        bins = np.linspace(np.min(maxima), np.max(maxima), num_bins + 1)
-        idx = np.digitize(maxima, bins) - 1
-        counts = np.bincount(idx, minlength=num_bins)
-        weights = 1.0 / counts[idx]
-        weights /= np.sum(weights)  # normalize
-        k = sample_size
-        sample_indices = np.random.choice(range(len(arr)), size=k, p=weights)
-
-        return arr[sample_indices]
+    
 
 
-    def gen_Data_Labled(self, n_frames: int = 50, min_amp: int = 10, ADC_smpls: int =ADC_SAMPLES): # used to be dependent on NN[0], but = ADC_smpls
-        Train_D_good = np.empty((n_frames*20, ADC_smpls), dtype=np.uint8)
+    def gen_Data_Labled(self, n_frames: int = 50, min_amp: int = 10): # used to be dependent on NN[0], but = ADC_smpls
+        Train_D_good = np.empty((n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
         for i in range(n_frames*20):
             Train_D_good[i,:] = self.signal_good_inp()
         
-        Train_D_bad = np.empty((n_frames*20, ADC_smpls), dtype=np.uint8)
+        Train_D_bad = np.empty((n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
         for i in range(n_frames*20):
             Train_D_bad[i,:] = self.signal_ugly_inp()
 
