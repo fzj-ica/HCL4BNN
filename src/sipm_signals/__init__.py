@@ -12,6 +12,8 @@ from .signals import (
 
 from .nn_cam import NN
 
+from .utils import diversity_score
+
 
 __all__ = [
     "sipm_wf",
@@ -23,5 +25,6 @@ __all__ = [
     "nois",
     "uint12_to_therm",
     "skw",
-    "NN"
+    "NN",
+    "diversity_score",
 ]

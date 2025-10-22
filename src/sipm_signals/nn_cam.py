@@ -223,7 +223,7 @@ class NN:
 
         return CAM_inp(inp, wght)
 
-    def calc_layer(
+    def forward(
     self,
     layer_pre: np.ndarray,
     layer_pre_idx: int,
@@ -278,17 +278,7 @@ class NN:
         neurons_next = ReLu_2bit
         
         return neurons_next
-    
-    
-    # aenderbar (je nach input und output layer)
-    # eher separates pre- und post-processing der Daten
-    # def run_nn(self, inp: np.ndarray) -> np.ndarray:
-    #     """Forward pass for input vector."""
-    #     # layer = layer_inp(inp)
-    #     layer = inp + 1
-    #     for i in range(len(self.NN)-1):
-    #         layer = self.calc_layer(layer, i)
-    #     return (layer >= 2).astype(np.uint8)
+
 
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """
@@ -317,12 +307,9 @@ class NN:
         
         layer = inp
         for i in range(len(self.NN)-1):
-            layer = self.calc_layer(layer, i, verbose=False)
+            layer = self.forward(layer, i, verbose=False)
         return layer
     
-    
-    # TODO: pre- and post-processing of data
-
 
     def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
         """Return SiPM (good) and noise (bad) training data."""
@@ -330,17 +317,13 @@ class NN:
         Train_D_bad  = np.array([adc.nois_therm() for _ in range(2)], dtype=np.uint8)
         return Train_D_good, Train_D_bad
 
-    def fitness(self, indi: np.ndarray) -> int:
+    def fitness(self) -> int:
         Train_D_good, Train_D_bad = self.calc_fitness()
 
         res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good)
         res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad)
 
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-    
-    def diversity_score(self, res_g, res_b):
-       assert len(res_g)==len(res_b), f"{len(res_g)} {len(res_b)}"
-       return np.sum(np.uint8(res_g != res_b)) / 2 / len(res_g)
  
 
     # ========================
