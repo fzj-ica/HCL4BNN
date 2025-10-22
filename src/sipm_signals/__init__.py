@@ -1,30 +1,16 @@
-from .signals import (
-    sipm_wf,
-    sipm_adc,
-    sipm_therm,
-    nois_adc,
-    nois_therm,
-    isg,
-    nois,
-    uint12_to_therm,
-    skw,
-)
+from .signals import SiPM
 
 from .nn_cam import NN
 
-from .utils import diversity_score
+from .utils import diversity_score, skw
+
+from .input import Input
 
 
 __all__ = [
-    "sipm_wf",
-    "sipm_adc",
-    "sipm_therm",
-    "nois_adc",
-    "nois_therm",
-    "isg",
-    "nois",
-    "uint12_to_therm",
-    "skw",
+    "SiPM",
     "NN",
     "diversity_score",
+    "skw",
+    "Input",
 ]
