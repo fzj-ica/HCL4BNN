@@ -1,7 +1,6 @@
 import numpy as np
 import time
 from typing import Tuple, Optional, List
-from .individuals import rand_indi, conv_from_indi_to_wght, conv_from_indi_to_summap
 import sipm_signals.signals as adc
 
 class NN:
@@ -36,13 +35,13 @@ class NN:
         self.segm = np.cumsum( np.concatenate( [[0], self.NN[:-1] * self.NN[1:] * wght_len ]) )
 
         if not individuals:
-            individuals = rand_indi(size=self.segm[-1])
+            individuals = self.get_rand_indi(size=self.segm[-1])
 
         self.description = description if description else "NN"
 
         # TODO: has to be done for every new individual
-        self.weights = conv_from_indi_to_wght(self, individuals)
-        self.summap = conv_from_indi_to_summap(self, individuals)
+        self.weights = self.conv_from_indi_to_wght(individuals)
+        self.summap = self.conv_from_indi_to_summap(individuals)
 
 
     def __str__(self) -> str:
@@ -266,6 +265,6 @@ class NN:
         """Compute sum maps for ReLU digitisation."""
         summap: List[np.ndarray] = []
         for i in range(0, len(self.NN) - 1):
-            nonzero = (self.NN[i] - np.uint8(conv_from_indi_to_wght(self, indi)[i] == 0).sum(axis = 1))
+            nonzero = (self.NN[i] - np.uint8(self.conv_from_indi_to_wght(indi)[i] == 0).sum(axis = 1))
             summap.append(np.array(nonzero[:, np.newaxis] * [0.5, 1.5, 2.5], dtype=np.uint16))
         return summap
