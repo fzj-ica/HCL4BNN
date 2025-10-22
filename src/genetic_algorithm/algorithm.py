@@ -26,7 +26,8 @@ class GeneticAlgorithm:
         Number of individuals in Hall of Fame.
     """
 
-    def __init__(self, fitness_function: Callable[[List[int]], float], 
+    def __init__(self, 
+                 nn, 
                  genome_length: int, 
                  mutation_prob: float,
                  pop_size:int = 200, 
@@ -34,7 +35,7 @@ class GeneticAlgorithm:
                  ngen: int = 10, 
                  elite_size: int = 2, 
                  pool: Optional[object] = None):
-        self.fitness_function = fitness_function
+        self.nn = nn
         self.genome_length = genome_length
         self.mutation_prob = mutation_prob
         self.pop_size = pop_size
@@ -55,7 +56,7 @@ class GeneticAlgorithm:
         toolbox.register("individual", tools.initRepeat, creator.Individual, # type: ignore
                          toolbox.attr_bool, n=self.genome_length) # type: ignore
         toolbox.register("population", tools.initRepeat, list, toolbox.individual) # type: ignore
-        toolbox.register("evaluate", lambda ind: (self.fitness_function(ind),))
+        toolbox.register("evaluate", lambda indi: (self.nn.evaluate(indi),))
         toolbox.register("mate", tools.cxTwoPoint)
         toolbox.register("mutate", tools.mutFlipBit, indpb=self.mutation_prob)
         toolbox.register("select", tools.selTournament, tournsize=3)

@@ -1,10 +1,11 @@
 import numpy as np
 import time
-from typing import Tuple, Optional, List
+from typing import Callable, Tuple, Optional, List
 from sipm_signals.input import Input
+from sipm_signals.nn_interface import INeuralNetwork
 from sipm_signals.signals import SiPM
 
-class NN:
+class NN(INeuralNetwork):
     """
     Simple neural network simulator with LUT-based activation and custom quantised weights.
     
@@ -45,7 +46,7 @@ class NN:
     
     def __init__(self, 
                  layers: Tuple[int, ...] = (128, 16, 128, 2), 
-                 input: Input | None = None,
+                 input: Optional[Input] = None, # just optional for now
                  neur_len: int = 2, 
                  inp_len: int = 7, 
                  bias_len: int = 2, 
@@ -83,7 +84,7 @@ class NN:
         self.wght_len = wght_len
         self.inp_len = inp_len
         self.inp_max = np.uint16((1 << inp_len) - 1)
-        self.input = input if input is not None else SiPM(n_samples=inp_len, x_range=(0, float(self.inp_max)))
+        self.input = input
         
         # Calculate segment boundaries for weight conversion
         self.segm = np.cumsum(np.concatenate([[0], self.NN[:-1] * self.NN[1:] * wght_len]))
@@ -226,61 +227,61 @@ class NN:
 
         return CAM_inp(inp, wght)
 
-    def forward(
-    self,
-    layer_pre: np.ndarray,
-    layer_pre_idx: int,
-    verbose: bool=True,
-) -> np.ndarray:
-        """
-        Compute the activations of the next layer in a simple feed-forward network.
+#     def calc_layer(
+#     self,
+#     layer_pre: np.ndarray,
+#     layer_pre_idx: int,
+#     verbose: bool=True,
+# ) -> np.ndarray:
+#         """
+#         Compute the activations of the next layer in a simple feed-forward network.
 
-        Returns
-        -------
-        np.ndarray, dtype uint8, shape (n_next,)
-            The digitised activations of the next layer.
-        """
-        if verbose:
-            print("* Input:")
-            print(layer_pre.shape)
-            time.sleep(0.001)
-        # ------------------------------------------------------------------ #
-        layer_weights = self.weights[layer_pre_idx]
+#         Returns
+#         -------
+#         np.ndarray, dtype uint8, shape (n_next,)
+#             The digitised activations of the next layer.
+#         """
+#         if verbose:
+#             print("* Input:")
+#             print(layer_pre.shape)
+#             time.sleep(0.001)
+#         # ------------------------------------------------------------------ #
+#         layer_weights = self.weights[layer_pre_idx]
 
-        if layer_pre_idx == 0:
-            weighted = self.cam_inp(layer_pre, layer_weights)
-        else:
-            weighted = self.cam_neur(layer_pre, layer_weights)
+#         if layer_pre_idx == 0:
+#             weighted = self.cam_inp(layer_pre, layer_weights)
+#         else:
+#             weighted = self.cam_neur(layer_pre, layer_weights)
 
-        if verbose:
-            print("* weighted:")
-            print(weighted.shape)
-            time.sleep(0.001)
+#         if verbose:
+#             print("* weighted:")
+#             print(weighted.shape)
+#             time.sleep(0.001)
 
-        # ------------------------------------------------------------------ #
-        neuron_sum = weighted.sum(axis=1)               # shape (n_next,)
-        if verbose:
-            print("* neuron_sum:")
-            print(neuron_sum.shape)
+#         # ------------------------------------------------------------------ #
+#         neuron_sum = weighted.sum(axis=1)               # shape (n_next,)
+#         if verbose:
+#             print("* neuron_sum:")
+#             print(neuron_sum.shape)
         
-        # ------------------------------------------------------------------ #
-        bin_edges = self.summap[layer_pre_idx]            # shape (n_next, n_bins)
-        if verbose:
-            print("* bin_edges:")
-            print(bin_edges.shape)
+#         # ------------------------------------------------------------------ #
+#         bin_edges = self.summap[layer_pre_idx]            # shape (n_next, n_bins)
+#         if verbose:
+#             print("* bin_edges:")
+#             print(bin_edges.shape)
         
 
-        # Digitise using ReLU-like activation (TODO: change for input layer)
-        ReLu_2bit = np.fromiter(    (np.digitize(x, b) for x, b in zip(neuron_sum, bin_edges)),    dtype=np.uint8)
-        # ReLu_2bit = np.array( [ np.digitize(neuron_sum[i], b) for i,b in enumerate(bin_edges) ] )
+#         # Digitise using ReLU-like activation (TODO: change for input layer)
+#         ReLu_2bit = np.fromiter(    (np.digitize(x, b) for x, b in zip(neuron_sum, bin_edges)),    dtype=np.uint8)
+#         # ReLu_2bit = np.array( [ np.digitize(neuron_sum[i], b) for i,b in enumerate(bin_edges) ] )
 
-        if verbose:
-            print("* ReLu_2bit:")
-            print(list(bin_edges)[:10], ReLu_2bit.shape)
+#         if verbose:
+#             print("* ReLu_2bit:")
+#             print(list(bin_edges)[:10], ReLu_2bit.shape)
 
-        neurons_next = ReLu_2bit
+#         neurons_next = ReLu_2bit
         
-        return neurons_next
+#         return neurons_next
 
 
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
@@ -310,24 +311,38 @@ class NN:
         
         layer = inp
         for i in range(len(self.NN)-1):
-            layer = self.forward(layer, i, verbose=False)
+            layer = self.forward(layer[i])
         return layer
+
     
+    # ========================
+    # Fitness / Evaluation (abstract methods)
+    # ========================
+    def forward(self, x):
+        a = x
+        for i in range(len(self.weights)-1):
+            if i == 0:
+                a = self.cam_inp(a, self.weights[i])
+            else:
+                a = self.cam_neur(a, self.weights[i])
+            neuron_sum = a.sum(axis=1)
+            bin_edges = self.summap[i]
+            a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
+        return a
 
-    def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Return SiPM (good) and noise (bad) training data."""
-        Train_D_good = np.array([self.input.sipm_therm() for _ in range(2)], dtype=np.uint8)
-        Train_D_bad  = np.array([self.input.nois_therm() for _ in range(2)], dtype=np.uint8)
-        return Train_D_good, Train_D_bad
+    def fitness(self, indi):
+        x, y = indi, self.input.get_labels()  # type: ignore
 
-    def fitness(self) -> int:
-        Train_D_good, Train_D_bad = self.calc_fitness()
-
-        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good)
-        res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad)
+        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=x)
+        res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
 
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
- 
+    
+
+    def evaluate(self, x, y):
+        preds = self.forward(x)
+        return self.fitness(x)
+
 
     # ========================
     # Individual conversions
@@ -354,3 +369,22 @@ class NN:
             nonzero = (self.NN[i] - np.uint8(self.conv_from_indi_to_wght(indi)[i] == 0).sum(axis = 1))
             summap.append(np.array(nonzero[:, np.newaxis] * [0.5, 1.5, 2.5], dtype=np.uint16))
         return summap
+    
+
+    
+
+
+# Just for testing / example
+# def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
+#     """Return SiPM (good) and noise (bad) training data."""
+#     Train_D_good = np.array([self.input.sipm_therm() for _ in range(2)], dtype=np.uint8)
+#     Train_D_bad  = np.array([self.input.nois_therm() for _ in range(2)], dtype=np.uint8)
+#     return Train_D_good, Train_D_bad
+
+# def fitness(self) -> int:
+#     Train_D_good, Train_D_bad = self.calc_fitness()
+
+#     res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good)
+#     res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad)
+
+#     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
