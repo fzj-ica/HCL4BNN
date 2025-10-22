@@ -5,14 +5,35 @@ import sipm_signals.signals as adc
 
 class NN:
     """
-    Simple neural network simulator with LUT-based activation and custom quantised weights (2-bit).
+    Simple neural network simulator with LUT-based activation and custom quantised weights.
+    
+    This class implements a neural network with Content-Addressable Memory (CAM) based
+    computation and Look-Up Table (LUT) based activation functions. The network uses
+    quantized weights and supports customizable bit lengths for different components.
 
     Attributes
     ----------
-    NN : Tuple[int, ...]
-        Number of neurons in each layer.
-    neur_len, bias_len, wght_len : int
-        Bit lengths for neurons, biases, and weights.
+    NN : np.ndarray
+        Array containing the number of neurons in each layer.
+    neur_len : int
+        Bit length for neurons (default: 2).
+    inp_len : int
+        Bit length for input values (default: 7).
+    bias_len : int
+        Bit length for bias values (default: 2).
+    wght_len : int
+        Bit length for weights (default: 2).
+    weights : List[np.ndarray]
+        List of weight matrices for each layer.
+    summap : List[np.ndarray]
+        List of sum maps for ReLU digitization.
+    description : str
+        Description of the neural network instance.
+        
+    Notes
+    -----
+    The network uses 2-bit quantization for weights and implements custom
+    activation functions through look-up tables for efficient hardware implementation.
     """
     _CAM_LUT = np.array([ # with input 0, 1, 2 ,3
     0, 0, 0, 0,   # bias = 0, n = 0..3
@@ -21,26 +42,59 @@ class NN:
     3, 2, 1, 0,   # bias = 3, n = 0..3
     ], dtype=np.uint8)  
     
-    def __init__(self, NN: Tuple[int, ...] = (128, 16, 128, 2), 
-                 neur_len: int = 2, inp_len: int = 7, bias_len: int = 2, wght_len: int = 2,
-                 individuals: Optional[np.ndarray] = None, description: Optional[str] = None):
-        self.NN = np.array(NN)
+    def __init__(self, 
+                 NN: Tuple[int, ...] = (128, 16, 128, 2), 
+                 neur_len: int = 2, 
+                 inp_len: int = 7, 
+                 bias_len: int = 2, 
+                 wght_len: int = 2,
+                 individuals: Optional[np.ndarray] = None, 
+                 description: Optional[str] = None) -> None:
+        """
+        Initialize the neural network with the given parameters.
+
+        Parameters
+        ----------
+        NN : Tuple[int, ...]
+            Number of neurons in each layer.
+        neur_len : int, optional
+            Bit length for neurons (default: 2).
+        inp_len : int, optional
+            Bit length for input values (default: 7).
+        bias_len : int, optional
+            Bit length for bias values (default: 2).
+        wght_len : int, optional
+            Bit length for weights (default: 2).
+        individuals : Optional[np.ndarray], optional
+            Initial weights in binary format (default: None).
+        description : Optional[str], optional
+            Description of the network (default: None).
+        """
+        if not all(n > 0 for n in NN):
+            raise ValueError("All layer sizes must be positive integers")
+        if not all(isinstance(x, int) and x > 0 for x in [neur_len, inp_len, bias_len, wght_len]):
+            raise ValueError("All bit lengths must be positive integers")
+            
+        self.NN = np.array(NN, dtype=np.int32)
         self.neur_len = neur_len
         self.bias_len = bias_len
         self.wght_len = wght_len
-        self.keep_l = [None]*len(NN)
         self.inp_len = inp_len
-        self.inp_max = np.uint16((1 << inp_len) - 1)  # max value for inp_len bits 
-
-        self.segm = np.cumsum( np.concatenate( [[0], self.NN[:-1] * self.NN[1:] * wght_len ]) )
-
-        if not individuals:
+        self.inp_max = np.uint16((1 << inp_len) - 1)
+        
+        # Calculate segment boundaries for weight conversion
+        self.segm = np.cumsum(np.concatenate([[0], self.NN[:-1] * self.NN[1:] * wght_len]))
+        
+        if individuals is None:
             individuals = self.get_rand_indi(size=self.segm[-1])
-
-        self.description = description if description else "NN"
-
-        self.weights: List[np.ndarray] = self.conv_from_indi_to_wght(individuals)
-        self.summap: List[np.ndarray] = self.conv_from_indi_to_summap(individuals)
+        elif len(individuals) != self.segm[-1]:
+            raise ValueError(f"Expected individuals of length {self.segm[-1]}, got {len(individuals)}")
+            
+        self.description = description or "NN"
+        
+        # Convert individuals to weights and sum maps
+        self.weights = self.conv_from_indi_to_wght(individuals)
+        self.summap = self.conv_from_indi_to_summap(individuals)
 
     def set_weights(self, indi) -> None:
         """Return the weight matrices for each layer."""
@@ -61,21 +115,39 @@ class NN:
     # aenderbar
     def cam_neur(self, neur: np.ndarray, wght: np.ndarray) -> np.ndarray: 
         """
-        CAM LUT lookup.
+        Perform CAM LUT lookup for neuron activation.
         
-        Computes index = (wght << 2) | neur
-        which is equivalent to index = wght * 4 + neur,
-        giving values from 0-15 for 2-bit inputs.
-        """
-        # Ensure inputs are uint8
-        neur = neur.astype(np.uint8, copy=False)
-        wght = wght.astype(np.uint8, copy=False)
-        print("wght shape:", wght.shape)
-        print("neur shape:", neur.shape)
+        This function implements the Content-Addressable Memory (CAM) lookup table
+        operation for neuron activation values. It combines neuron and weight values
+        to create an index into the CAM LUT.
 
-        # Compute 4-bit LUT index
-        idx: np.ndarray = (wght << 2) | neur # range 0-15
-        return self._CAM_LUT[idx]  
+        Parameters
+        ----------
+        neur : np.ndarray
+            Input neuron values (should be 2-bit values: 0-3).
+        wght : np.ndarray
+            Weight values (should be 2-bit values: 0-3).
+
+        Returns
+        -------
+        np.ndarray
+            Activation values after CAM LUT lookup.
+
+        Notes
+        -----
+        The function computes index = (wght << 2) | neur which is equivalent to 
+        index = wght * 4 + neur, giving values from 0-15 for 2-bit inputs.
+        """
+        if neur.shape != wght.shape:
+            raise ValueError(f"Shape mismatch: neur {neur.shape} != wght {wght.shape}")
+            
+        # Ensure inputs are uint8 and within valid range
+        neur = np.clip(neur.astype(np.uint8, copy=False), 0, 3)
+        wght = np.clip(wght.astype(np.uint8, copy=False), 0, 3)
+
+        # Compute 4-bit LUT index (range 0-15)
+        idx: np.ndarray = (wght << 2) | neur
+        return self._CAM_LUT[idx]
     
     
     def cam_inp(self, inp: np.ndarray, wght: np.ndarray) -> np.ndarray:
@@ -219,10 +291,33 @@ class NN:
     #     return (layer >= 2).astype(np.uint8)
 
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
-        """Forward pass for input vector."""
+        """
+        Perform a forward pass through the neural network.
+        
+        Parameters
+        ----------
+        inp : np.ndarray
+            Input vector to the neural network. Should be within valid input range.
+            
+        Returns
+        -------
+        np.ndarray
+            Output vector after passing through all layers.
+            
+        Raises
+        ------
+        ValueError
+            If input shape doesn't match the first layer's expected input size.
+        """
+        if inp.shape[-1] != self.NN[0]:
+            raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
+            
+        # Ensure input is within valid range
+        inp = np.clip(inp, 0, self.inp_max)
+        
         layer = inp
         for i in range(len(self.NN)-1):
-            layer = self.calc_layer(layer, i)
+            layer = self.calc_layer(layer, i, verbose=False)
         return layer
     
     
