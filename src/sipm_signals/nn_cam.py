@@ -39,10 +39,16 @@ class NN:
 
         self.description = description if description else "NN"
 
-        # TODO: has to be done for every new individual
-        self.weights = self.conv_from_indi_to_wght(individuals)
-        self.summap = self.conv_from_indi_to_summap(individuals)
+        self.weights: List[np.ndarray] = self.conv_from_indi_to_wght(individuals)
+        self.summap: List[np.ndarray] = self.conv_from_indi_to_summap(individuals)
 
+    def set_weights(self, indi) -> None:
+        """Return the weight matrices for each layer."""
+        self.weights = self.conv_from_indi_to_wght(indi)
+
+    def set_summap(self, indi) -> None:
+        """Return the sum maps for each layer."""
+        self.summap = self.conv_from_indi_to_summap(indi)
 
     def __str__(self) -> str:
         return f"{self.description} Net: {self.NN}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit, Bias: {self.bias_len}-bit"
@@ -241,7 +247,6 @@ class NN:
        assert len(res_g)==len(res_b), f"{len(res_g)} {len(res_b)}"
        return np.sum(np.uint8(res_g != res_b)) / 2 / len(res_g)
  
-
 
     # ========================
     # Individual conversions
