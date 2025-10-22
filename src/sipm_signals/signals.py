@@ -1,14 +1,17 @@
 from typing import Tuple
 import numpy as np
 import random
-from input import Input
+from sipm_signals.input import Input
 
 class SiPM(Input):
     def __init__(self,
+                 x=None, y=None, func=None,
+                 x_range: Tuple[float, float] = (0, 127),
+                 n_samples: int = 128,
                  adc_bits: int = 12,
                  adc_samples: int = 128,
                  adc_min: int = 0):
-        super().__init__()
+        super().__init__(x, y, func, n_samples, x_range)
 
         self.ADC_BITS = adc_bits
         self.ADC_SAMPLES = adc_samples

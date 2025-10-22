@@ -1,7 +1,8 @@
 import numpy as np
 import time
 from typing import Tuple, Optional, List
-import sipm_signals.signals as adc
+from sipm_signals.input import Input
+from sipm_signals.signals import SiPM
 
 class NN:
     """
@@ -43,7 +44,8 @@ class NN:
     ], dtype=np.uint8)  
     
     def __init__(self, 
-                 NN: Tuple[int, ...] = (128, 16, 128, 2), 
+                 layers: Tuple[int, ...] = (128, 16, 128, 2), 
+                 input: Input | None = None,
                  neur_len: int = 2, 
                  inp_len: int = 7, 
                  bias_len: int = 2, 
@@ -55,7 +57,7 @@ class NN:
 
         Parameters
         ----------
-        NN : Tuple[int, ...]
+        layers : Tuple[int, ...]
             Number of neurons in each layer.
         neur_len : int, optional
             Bit length for neurons (default: 2).
@@ -70,17 +72,18 @@ class NN:
         description : Optional[str], optional
             Description of the network (default: None).
         """
-        if not all(n > 0 for n in NN):
+        if not all(n > 0 for n in layers):
             raise ValueError("All layer sizes must be positive integers")
         if not all(isinstance(x, int) and x > 0 for x in [neur_len, inp_len, bias_len, wght_len]):
             raise ValueError("All bit lengths must be positive integers")
             
-        self.NN = np.array(NN, dtype=np.int32)
+        self.NN = np.array(layers, dtype=np.int32)
         self.neur_len = neur_len
         self.bias_len = bias_len
         self.wght_len = wght_len
         self.inp_len = inp_len
         self.inp_max = np.uint16((1 << inp_len) - 1)
+        self.input = input if input is not None else SiPM(n_samples=inp_len, x_range=(0, float(self.inp_max)))
         
         # Calculate segment boundaries for weight conversion
         self.segm = np.cumsum(np.concatenate([[0], self.NN[:-1] * self.NN[1:] * wght_len]))
@@ -313,8 +316,8 @@ class NN:
 
     def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
         """Return SiPM (good) and noise (bad) training data."""
-        Train_D_good = np.array([adc.sipm_therm() for _ in range(2)], dtype=np.uint8)
-        Train_D_bad  = np.array([adc.nois_therm() for _ in range(2)], dtype=np.uint8)
+        Train_D_good = np.array([self.input.sipm_therm() for _ in range(2)], dtype=np.uint8)
+        Train_D_bad  = np.array([self.input.nois_therm() for _ in range(2)], dtype=np.uint8)
         return Train_D_good, Train_D_bad
 
     def fitness(self) -> int:
