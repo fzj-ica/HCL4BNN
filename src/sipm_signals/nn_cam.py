@@ -142,12 +142,12 @@ class NN(INeuralNetwork):
         The function computes index = (wght << 2) | neur which is equivalent to 
         index = wght * 4 + neur, giving values from 0-15 for 2-bit inputs.
         """
-        if neur.shape != wght.shape:
-            raise ValueError(f"Shape mismatch: neur {neur.shape} != wght {wght.shape}")
+        # if neur.shape != wght.shape:
+        #     raise ValueError(f"Shape mismatch: neur {neur.shape} != wght {wght.shape}")
             
-        # Ensure inputs are uint8 and within valid range
-        neur = np.clip(neur.astype(np.uint8, copy=False), 0, 3)
-        wght = np.clip(wght.astype(np.uint8, copy=False), 0, 3)
+        # # Ensure inputs are uint8 and within valid range
+        # neur = np.clip(neur.astype(np.uint8, copy=False), 0, 3)
+        # wght = np.clip(wght.astype(np.uint8, copy=False), 0, 3)
 
         # Compute 4-bit LUT index (range 0-15)
         idx: np.ndarray = (wght << 2) | neur
@@ -309,10 +309,7 @@ class NN(INeuralNetwork):
         # Ensure input is within valid range
         inp = np.clip(inp, 0, self.inp_max)
         
-        layer = inp
-        for i in range(len(self.NN)-1):
-            layer = self.forward(layer[i])
-        return layer
+        return np.apply_along_axis(func1d=self.forward, axis=1, arr=inp)
 
     
     # ========================
@@ -320,7 +317,7 @@ class NN(INeuralNetwork):
     # ========================
     def forward(self, x):
         a = x
-        for i in range(len(self.weights)-1):
+        for i in range(len(self.weights)-1): # over all layers
             if i == 0:
                 a = self.cam_inp(a, self.weights[i])
             else:
