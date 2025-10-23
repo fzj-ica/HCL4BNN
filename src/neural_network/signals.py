@@ -1,7 +1,7 @@
 from typing import Tuple
 import numpy as np
 import random
-from sipm_signals.input import Input
+from neural_network.input import Input
 
 class SiPM(Input):
     def __init__(self,

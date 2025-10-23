@@ -1,9 +1,8 @@
 import numpy as np
-import time
-from typing import Callable, Tuple, Optional, List
-from sipm_signals.input import Input
-from sipm_signals.nn_interface import INeuralNetwork
-from sipm_signals.signals import SiPM
+from typing import Tuple, Optional, List
+from neural_network.input import Input
+from neural_network.base_nn import INeuralNetwork
+from neural_network.signals import SiPM
 
 class NN(INeuralNetwork):
     """

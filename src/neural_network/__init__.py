@@ -1,7 +1,7 @@
 from .signals import SiPM
 
-from .nn_cam import NN
-from .nn_interface import INeuralNetwork
+from .binary_nn import NN
+from .base_nn import INeuralNetwork
 
 from .utils import diversity_score, skw
 

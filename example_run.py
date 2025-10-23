@@ -1,5 +1,5 @@
 import numpy as np
-from src.sipm_signals.nn_cam import NN
+from neural_network.binary_nn import NN
 from src.genetic_algorithm.algorithm import GeneticAlgorithm
 
 
