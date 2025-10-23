@@ -1,11 +1,9 @@
 import numpy as np
-import time
-from typing import Callable, Tuple, Optional, List
-from sipm_signals.input import Input
-from sipm_signals.nn_interface import INeuralNetwork
-from sipm_signals.signals import SiPM
+from typing import Tuple, Optional, List
+from datasets.base_dataset import BaseDataset
+from neural_network.base_nn import BaseNeuralNetwork
 
-class NN(INeuralNetwork):
+class NN(BaseNeuralNetwork):
     """
     Simple neural network simulator with LUT-based activation and custom quantised weights.
     
@@ -46,7 +44,7 @@ class NN(INeuralNetwork):
     
     def __init__(self, 
                  layers: Tuple[int, ...] = (128, 16, 128, 2), 
-                 input: Optional[Input] = None, # just optional for now
+                 input: Optional[BaseDataset] = None, # just optional for now
                  neur_len: int = 2, 
                  inp_len: int = 7, 
                  bias_len: int = 2, 
@@ -309,7 +307,7 @@ class NN(INeuralNetwork):
         # Ensure input is within valid range
         inp = np.clip(inp, 0, self.inp_max)
         
-        return np.apply_along_axis(func1d=self.forward, axis=1, arr=inp)
+        return np.apply_along_axis(func1d=self.forward, axis=0, arr=inp)
 
     
     # ========================
@@ -328,15 +326,16 @@ class NN(INeuralNetwork):
         return a
 
     def fitness(self, indi):
-        x, y = indi, self.input.get_labels()  # type: ignore
+        print(f"Individual: {indi}")
+        x, y = indi, self.input.load_data()[1]  # type: ignore
 
-        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=x)
+        res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
         res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
 
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
     
 
-    def evaluate(self, x, y):
+    def evaluate(self, x, y=None):
         preds = self.forward(x)
         return self.fitness(x)
 

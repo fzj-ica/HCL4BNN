@@ -1,25 +1,18 @@
 from typing import Tuple
 import numpy as np
 import random
-from sipm_signals.input import Input
+from .base_dataset import BaseDataset
+from .utils import distill_uniform, uint12_to_redint, uint12_to_therm
 
-class SiPM(Input):
-    def __init__(self,
-                 x=None, y=None, func=None,
-                 x_range: Tuple[float, float] = (0, 127),
-                 n_samples: int = 128,
-                 adc_bits: int = 12,
-                 adc_samples: int = 128,
-                 adc_min: int = 0):
-        super().__init__(x, y, func, n_samples, x_range)
+class SiPMDataset(BaseDataset):
+    def __init__(self, n_samples: int = 128, n_frames: int = 50):
+        self.ADC_BITS = 12
+        self.ADC_SAMPLES = n_samples
+        self.ADC_MIN = 0
+        self.ADC_MAX = (2 ** self.ADC_BITS) - 1
+        self.ADC_ZERO = 2 ** (self.ADC_BITS - 1)
 
-        self.ADC_BITS = adc_bits
-        self.ADC_SAMPLES = adc_samples
-        self.ADC_MIN = adc_min
-
-        self.ADC_MAX = (2 ** self.ADC_BITS) - 1 + self.ADC_MIN
-        self.ADC_ZERO = 2 ** (self.ADC_BITS - 1) - self.ADC_MIN
-
+        self.n_frames = n_frames
 
     # =============================
     # Core Signal Functions
@@ -34,7 +27,7 @@ class SiPM(Input):
             Time axis values.
         par : tuple[float, float, float]
             Parameters for the signal function: (amplitude, t_fast, t_slow).
-
+            
         Returns
         -------
         np.ndarray
@@ -155,61 +148,19 @@ class SiPM(Input):
         return np.array([1,0])
 
 
-    # =============================
-    # Encoding Helpers
-    # =============================
-    def uint12_to_therm(self, values: np.ndarray, num_bins: int = 16) -> np.ndarray:
-        """
-        Convert uint12 values to thermometer encoding.
-
-        Parameters
-        ----------
-        values : np.ndarray
-            Input ADC values.
-        num_bins : int, optional
-            Number of thermometer bins.
-
-        Returns
-        -------
-        np.ndarray
-            Thermometer-coded array of shape (len(values), num_bins).
-        """
-        values = np.asarray(values, dtype=np.uint16)
-        thresholds = np.arange(0,2**11,2**11/num_bins) # 2**11+1 for endpoint
-        thermometer = (values[:, None] > thresholds).astype(np.uint8)
-        return thermometer
-
-    def uint12_to_redint(self, values: np.ndarray, num_bits: int = 7) -> np.ndarray:
-        """
-        Convert 12-bit unsigned integer ADC values to a reduced integer representation with fewer bits.
-
-        Parameters
-        ----------
-        values : np.ndarray
-            Input array of 12-bit unsigned integer ADC values.
-        num_bits : int, optional
-            Number of bits for the reduced integer representation (default is 7).
-
-        Returns
-        -------
-        np.ndarray
-            Array of reduced integer values with the specified number of bits.
-        """
-        offset = np.clip(np.asarray(values, dtype=np.int16) + 128 - self.ADC_ZERO, 0, self.ADC_MAX - self.ADC_ZERO)
-        reduced = np.right_shift(offset, 12 - num_bits - 1)
-        return reduced
+    
 
 
     def sipm_therm(self) -> np.ndarray:
         """Generate thermometer encoded SiPM waveform."""
         x,y = self.sipm_adc()
 
-        return np.ravel( self.uint12_to_therm( y + 128 - self.ADC_ZERO ) )
+        return np.ravel(uint12_to_therm( y + 128 - self.ADC_ZERO ) )
 
     def nois_therm(self) -> np.ndarray:
         """Generate thermometer encoded noise waveform."""
         x,y = self.nois_adc()
-        return np.ravel( self.uint12_to_therm( y + 128 - self.ADC_ZERO ) )
+        return np.ravel(uint12_to_therm( y + 128 - self.ADC_ZERO ) )
 
 
 
@@ -233,16 +184,16 @@ class SiPM(Input):
 
 
     def signal_good_inp(self):
-        return self.uint12_to_redint( self.sipm_adc()[1] )
+        return uint12_to_redint( self.sipm_adc()[1] )
 
     def signal_ugly_inp(self):
-        return self.uint12_to_redint( self.double_sipm_adc()[1] )
+        return uint12_to_redint( self.double_sipm_adc()[1] )
 
     # for constraining/validating the network
     def other_inp(self):
         return np.random.randint(
-            low=self.uint12_to_redint(np.array([self.ADC_ZERO])),
-            high=self.uint12_to_redint(np.array([self.ADC_MAX])),
+            low=uint12_to_redint(np.array([self.ADC_ZERO])),
+            high=uint12_to_redint(np.array([self.ADC_MAX])),
             size=self.ADC_SAMPLES
         )
 
@@ -251,8 +202,6 @@ class SiPM(Input):
     # =============================
 
     
-
-
     def gen_Data_Labled(self, n_frames: int = 50, min_amp: int = 10): # used to be dependent on NN[0], but = ADC_smpls
         Train_D_good = np.empty((n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
         for i in range(n_frames*20):
@@ -262,8 +211,8 @@ class SiPM(Input):
         for i in range(n_frames*20):
             Train_D_bad[i,:] = self.signal_ugly_inp()
 
-        Train_D_good = self.distill_uniform(Train_D_good, min_amp = min_amp, sample_size = n_frames)
-        Train_D_bad  = self.distill_uniform(Train_D_bad,  min_amp = min_amp, sample_size = n_frames)
+        Train_D_good = distill_uniform(Train_D_good, min_amp = min_amp, sample_size = n_frames)
+        Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = min_amp, sample_size = n_frames)
 
         return np.concatenate([
             Train_D_good, 
@@ -274,6 +223,24 @@ class SiPM(Input):
         ])      
 
 
+
+    # === data generation ===
+    def generate_waveforms(self):
+        X_good = np.array([uint12_to_redint(self.sipm_adc()[1]) for _ in range(self.n_frames * 20)])
+        X_ugly = np.array([uint12_to_redint(self.double_sipm_adc()[1]) for _ in range(self.n_frames * 20)])
+        X_good = distill_uniform(X_good, min_amp=10, sample_size=self.n_frames)
+        X_ugly = distill_uniform(X_ugly, min_amp=10, sample_size=self.n_frames)
+        X = np.concatenate([X_good, X_ugly])
+        y = np.concatenate([np.tile([1, 0], (len(X_good), 1)), np.tile([0, 1], (len(X_ugly), 1))])
+        return X, y
+
+    # === BaseDataset API ===
+    def load_data(self):
+        return self.generate_waveforms()
+
+    def get_input_dim(self):
+        return self.ADC_SAMPLES
+
+    def get_num_classes(self):
+        return 2
     
-
-

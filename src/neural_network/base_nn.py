@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
-class INeuralNetwork(ABC):
+class BaseNeuralNetwork(ABC):
     
-
     @abstractmethod
     def fitness(self, indi):
         pass

@@ -1,9 +1,10 @@
 [project]
-name = "sipm_ga_nn"
+name = "HCL4BNN"
 version = "0.1.0"
-description = "SiPM signal simulation and LUT-based neural network optimized with a genetic algorithm (BNN)"
+description = "LUT-based neural network optimized with a genetic algorithm (BNN)"
 authors = [
-    {name = "Alperen Aksoy", email = "a.aksoy@fz-juelich.de"}
+    {name = "Alperen Aksoy", email = "a.aksoy@fz-juelich.de"},
+    {name = "Ilja Bekman", email = "i.bekman@fz-juelich.de"}
 ]
 requires-python = ">=3.10"
 keywords = ["sipm", "neural network", "genetic algorithm", "simulation", "bnn", "binarized neural network"]
@@ -28,4 +29,4 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["sipm_signals*", "genetic_algorithm*"]
+include = ["enural_network*", "genetic_algorithm*", "datasets*"]

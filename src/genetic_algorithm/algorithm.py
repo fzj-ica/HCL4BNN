@@ -2,7 +2,11 @@ from typing import Callable, List, Optional, Tuple
 from deap import base, creator, tools, algorithms
 import time
 import numpy as np
+
+from genetic_algorithm.evaluation import NNEvaluator
 from .utils import time_elapsed, diversity
+from .toolbox_utils import create_toolbox
+from .statistics import create_stats
 
 class GeneticAlgorithm:
     """
@@ -44,34 +48,9 @@ class GeneticAlgorithm:
         self.elite_size = elite_size
         self.pool = pool  # Placeholder for multiprocessing pool if needed
 
-    def _create_toolbox_and_creator(self) -> base.Toolbox:
-        """Create DEAP toolbox and creator objects."""
-        if not hasattr(creator, "FitnessMax"):
-            creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-        if not hasattr(creator, "Individual"):
-            creator.create("Individual", list, fitness=creator.FitnessMax) # type: ignore
 
-        toolbox = base.Toolbox()
-        toolbox.register("attr_bool", lambda: 1 if np.random.rand() < 0.8 else 0)
-        toolbox.register("individual", tools.initRepeat, creator.Individual, # type: ignore
-                         toolbox.attr_bool, n=self.genome_length) # type: ignore
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual) # type: ignore
-        toolbox.register("evaluate", lambda indi: (self.nn.evaluate(indi),))
-        toolbox.register("mate", tools.cxTwoPoint)
-        toolbox.register("mutate", tools.mutFlipBit, indpb=self.mutation_prob)
-        toolbox.register("select", tools.selTournament, tournsize=3)
-        toolbox.register("map", self.pool.map if self.pool else map) # type: ignore
 
-        return toolbox
-    
-    def _test_toolbox(self, toolbox: base.Toolbox):
-        """Test the toolbox by creating and evaluating a sample individual."""
-        ind = toolbox.individual() # type: ignore
-        print("Sample Individual:", ind)
-        fitness = toolbox.evaluate(ind) # type: ignore
-        print("Sample Fitness:", fitness)
-
-    def ea_simple_with_elitism(self, population, toolbox, stats=None, 
+    def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
                             halloffame=None, verbose=True) -> Tuple[List, tools.Logbook]:
         """
         Simple evolutionary algorithm with elitism.
@@ -145,8 +124,8 @@ class GeneticAlgorithm:
     
     def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
-        toolbox = self._create_toolbox_and_creator()
-        self._test_toolbox(toolbox)
+        eval_func = NNEvaluator(self.nn)
+        toolbox = create_toolbox(self.genome_length, self.mutation_prob, eval_func, self.pool)
 
         print("Create init population...")
         time_start = time.time()
@@ -165,7 +144,7 @@ class GeneticAlgorithm:
         
 
         print("Start evolution...")
-        pop, log = self.ea_simple_with_elitism(pop, toolbox, stats=stats, halloffame=hof)
+        pop, log = self._ea_simple_with_elitism(pop, toolbox, stats=stats, halloffame=hof)
         print("Evolution finished.")
 
         return pop, log, hof
