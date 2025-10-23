@@ -1,10 +1,9 @@
 import numpy as np
 from typing import Tuple, Optional, List
-from neural_network.input import Input
-from neural_network.base_nn import INeuralNetwork
-from neural_network.signals import SiPM
+from datasets.base_dataset import BaseDataset
+from neural_network.base_nn import BaseNeuralNetwork
 
-class NN(INeuralNetwork):
+class NN(BaseNeuralNetwork):
     """
     Simple neural network simulator with LUT-based activation and custom quantised weights.
     
@@ -45,7 +44,7 @@ class NN(INeuralNetwork):
     
     def __init__(self, 
                  layers: Tuple[int, ...] = (128, 16, 128, 2), 
-                 input: Optional[Input] = None, # just optional for now
+                 input: Optional[BaseDataset] = None, # just optional for now
                  neur_len: int = 2, 
                  inp_len: int = 7, 
                  bias_len: int = 2, 

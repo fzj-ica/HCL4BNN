@@ -28,4 +28,4 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["sipm_signals*", "genetic_algorithm*"]
+include = ["enural_network*", "genetic_algorithm*", "datasets*"]
