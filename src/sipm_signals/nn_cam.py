@@ -142,12 +142,12 @@ class NN(INeuralNetwork):
         The function computes index = (wght << 2) | neur which is equivalent to 
         index = wght * 4 + neur, giving values from 0-15 for 2-bit inputs.
         """
-        if neur.shape != wght.shape:
-            raise ValueError(f"Shape mismatch: neur {neur.shape} != wght {wght.shape}")
+        # if neur.shape != wght.shape:
+        #     raise ValueError(f"Shape mismatch: neur {neur.shape} != wght {wght.shape}")
             
-        # Ensure inputs are uint8 and within valid range
-        neur = np.clip(neur.astype(np.uint8, copy=False), 0, 3)
-        wght = np.clip(wght.astype(np.uint8, copy=False), 0, 3)
+        # # Ensure inputs are uint8 and within valid range
+        # neur = np.clip(neur.astype(np.uint8, copy=False), 0, 3)
+        # wght = np.clip(wght.astype(np.uint8, copy=False), 0, 3)
 
         # Compute 4-bit LUT index (range 0-15)
         idx: np.ndarray = (wght << 2) | neur
