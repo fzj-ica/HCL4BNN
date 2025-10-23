@@ -307,7 +307,7 @@ class NN(BaseNeuralNetwork):
         # Ensure input is within valid range
         inp = np.clip(inp, 0, self.inp_max)
         
-        return np.apply_along_axis(func1d=self.forward, axis=1, arr=inp)
+        return np.apply_along_axis(func1d=self.forward, axis=0, arr=inp)
 
     
     # ========================
@@ -326,9 +326,10 @@ class NN(BaseNeuralNetwork):
         return a
 
     def fitness(self, indi):
-        x, y = indi, self.input.get_labels()  # type: ignore
+        print(f"Individual: {indi}")
+        x, y = indi, self.input.load_data()[1]  # type: ignore
 
-        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=x)
+        res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
         res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
 
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)

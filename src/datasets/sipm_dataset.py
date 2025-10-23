@@ -243,3 +243,4 @@ class SiPMDataset(BaseDataset):
 
     def get_num_classes(self):
         return 2
+    

@@ -5,6 +5,8 @@ from typing import Tuple
 class BaseDataset(ABC):
     """Abstract dataset interface for synthetic or real datasets."""
     
+    # TODO: pre- and post-processing methods can be added here
+
     @abstractmethod
     def load_data(self) -> Tuple[np.ndarray, np.ndarray]:
         """Load or generate the dataset. Returns (X, y)."""
@@ -19,3 +21,5 @@ class BaseDataset(ABC):
     def get_num_classes(self) -> int:
         """Return number of output classes."""
         pass
+
+
