@@ -309,10 +309,7 @@ class NN(INeuralNetwork):
         # Ensure input is within valid range
         inp = np.clip(inp, 0, self.inp_max)
         
-        layer = inp
-        for i in range(len(self.NN)-1):
-            layer = self.forward(layer[i])
-        return layer
+        return np.apply_along_axis(func1d=self.forward, axis=1, arr=inp)
 
     
     # ========================
@@ -320,7 +317,7 @@ class NN(INeuralNetwork):
     # ========================
     def forward(self, x):
         a = x
-        for i in range(len(self.weights)-1):
+        for i in range(len(self.weights)-1): # over all layers
             if i == 0:
                 a = self.cam_inp(a, self.weights[i])
             else:
