@@ -34,7 +34,7 @@ class SiPM(Input):
             Time axis values.
         par : tuple[float, float, float]
             Parameters for the signal function: (amplitude, t_fast, t_slow).
-
+            
         Returns
         -------
         np.ndarray

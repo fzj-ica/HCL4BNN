@@ -336,7 +336,7 @@ class NN(INeuralNetwork):
         return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
     
 
-    def evaluate(self, x, y):
+    def evaluate(self, x, y=None):
         preds = self.forward(x)
         return self.fitness(x)
 
