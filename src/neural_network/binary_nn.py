@@ -223,6 +223,7 @@ class NN(BaseNeuralNetwork):
 
         CAM_inp = np.vectorize(CAM_inp_scalar)
 
+        print(f"* inp: {inp} \n\n wght: {wght}")
         return CAM_inp(inp, wght)
 
 #     def calc_layer(
@@ -282,7 +283,7 @@ class NN(BaseNeuralNetwork):
 #         return neurons_next
 
 
-    def run_nn(self, inp: np.ndarray) -> np.ndarray:
+    def run_nn(self, inp: np.ndarray, indi: np.ndarray) -> np.ndarray:
         """
         Perform a forward pass through the neural network.
         
@@ -301,8 +302,8 @@ class NN(BaseNeuralNetwork):
         ValueError
             If input shape doesn't match the first layer's expected input size.
         """
-        if inp.shape[-1] != self.NN[0]:
-            raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
+        # if inp.shape[-1] != self.NN[0]:
+        #     raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
             
         # Ensure input is within valid range
         inp = np.clip(inp, 0, self.inp_max)
@@ -313,7 +314,11 @@ class NN(BaseNeuralNetwork):
     # ========================
     # Fitness / Evaluation (abstract methods)
     # ========================
-    def forward(self, x):
+    def forward(self, x, indi):
+        """Perform one forward pass for one input x and individual indi."""
+        self.set_weights(indi)
+        self.set_summap(indi)   
+
         a = x
         for i in range(len(self.weights)): # over all layers
             if i == 0:
@@ -325,6 +330,18 @@ class NN(BaseNeuralNetwork):
             a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
         return a
 
+    # def fitness(self, indi):
+    #     print(f"Individual: {indi}")
+    #     x_good, x_bad = indi, self.input.load_data()[1]  # type: ignore
+
+    #     res_good = [self.run_nn(x, indi) for x in x_good]
+    #     res_bad = [self.run_nn(x, indi) for x in x_bad]
+        
+    #     # res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
+    #     # res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
+
+    #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
+    
     def fitness(self, indi):
         print(f"individual: {indi}")
         x, y = indi, self.input.load_data()[1]  # type: ignore
@@ -336,8 +353,14 @@ class NN(BaseNeuralNetwork):
     
 
     def evaluate(self, x, y=None):
-        preds = self.forward(x)
-        return self.fitness(x)
+        indi = x
+        self.set_weights(indi)
+        self.set_summap(indi)
+        return (self.fitness(indi))
+
+
+    # def evaluate(self, x, y=None):
+        # return self.fitness(x)
 
 
     # ========================
