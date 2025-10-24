@@ -49,7 +49,7 @@ class NN(BaseNeuralNetwork):
                  inp_len: int = 7, 
                  bias_len: int = 2, 
                  wght_len: int = 2,
-                 individuals: Optional[np.ndarray] = None, 
+                 individual: Optional[np.ndarray] = None, 
                  description: Optional[str] = None) -> None:
         """
         Initialize the neural network with the given parameters.
@@ -66,7 +66,7 @@ class NN(BaseNeuralNetwork):
             Bit length for bias values (default: 2).
         wght_len : int, optional
             Bit length for weights (default: 2).
-        individuals : Optional[np.ndarray], optional
+        individual : Optional[np.ndarray], optional
             Initial weights in binary format (default: None).
         description : Optional[str], optional
             Description of the network (default: None).
@@ -87,16 +87,16 @@ class NN(BaseNeuralNetwork):
         # Calculate segment boundaries for weight conversion
         self.segm = np.cumsum(np.concatenate([[0], self.NN[:-1] * self.NN[1:] * wght_len]))
         
-        if individuals is None:
-            individuals = self.get_rand_indi()
-        elif len(individuals) != self.segm[-1]:
-            raise ValueError(f"Expected individuals of length {self.segm[-1]}, got {len(individuals)}")
+        if individual is None:
+            individual = self.get_rand_indi()
+        elif len(individual) != self.segm[-1]:
+            raise ValueError(f"Expected individual of length {self.segm[-1]}, got {len(individual)}")
             
         self.description = description or "NN"
         
-        # Convert individuals to weights and sum maps
-        self.weights = self.conv_from_indi_to_wght(individuals)
-        self.summap = self.conv_from_indi_to_summap(individuals)
+        # Convert individual to weights and sum maps
+        self.weights = self.conv_from_indi_to_wght(individual)
+        self.summap = self.conv_from_indi_to_summap(individual)
 
     def set_weights(self, indi) -> None:
         """Return the weight matrices for each layer."""
@@ -326,7 +326,7 @@ class NN(BaseNeuralNetwork):
         return a
 
     def fitness(self, indi):
-        print(f"Individual: {indi}")
+        print(f"individual: {indi}")
         x, y = indi, self.input.load_data()[1]  # type: ignore
 
         res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
@@ -341,7 +341,7 @@ class NN(BaseNeuralNetwork):
 
 
     # ========================
-    # Individual conversions
+    # individual's conversions
     # ========================
 
     def get_rand_indi(self, size=None) -> np.ndarray:
