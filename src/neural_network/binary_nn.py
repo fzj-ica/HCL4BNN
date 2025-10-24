@@ -88,7 +88,7 @@ class NN(BaseNeuralNetwork):
         self.segm = np.cumsum(np.concatenate([[0], self.NN[:-1] * self.NN[1:] * wght_len]))
         
         if individuals is None:
-            individuals = self.get_rand_indi(size=self.segm[-1])
+            individuals = self.get_rand_indi()
         elif len(individuals) != self.segm[-1]:
             raise ValueError(f"Expected individuals of length {self.segm[-1]}, got {len(individuals)}")
             
