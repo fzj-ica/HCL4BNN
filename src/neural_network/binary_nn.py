@@ -315,7 +315,7 @@ class NN(BaseNeuralNetwork):
     # ========================
     def forward(self, x):
         a = x
-        for i in range(len(self.weights)-1): # over all layers
+        for i in range(len(self.weights)): # over all layers
             if i == 0:
                 a = self.cam_inp(a, self.weights[i])
             else:
