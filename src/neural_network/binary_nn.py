@@ -344,8 +344,10 @@ class NN(BaseNeuralNetwork):
     # Individual conversions
     # ========================
 
-    def get_rand_indi(self, size) -> np.ndarray:
+    def get_rand_indi(self, size=None) -> np.ndarray:
         """Generate a random individual (binary array)."""
+        if size is None:
+            size = self.segm[-1]
         return np.random.binomial(1, 0.65, size=size)
 
     def conv_from_indi_to_wght(self, indi: np.ndarray) -> List[np.ndarray]:
