@@ -307,7 +307,7 @@ class NN(BaseNeuralNetwork):
         # Ensure input is within valid range
         inp = np.clip(inp, 0, self.inp_max)
         
-        return np.apply_along_axis(func1d=self.forward, axis=0, arr=inp)
+        return np.apply_along_axis(func1d=self.forward, axis=1, arr=inp)
 
     
     # ========================
@@ -315,7 +315,7 @@ class NN(BaseNeuralNetwork):
     # ========================
     def forward(self, x):
         a = x
-        for i in range(len(self.weights)-1): # over all layers
+        for i in range(len(self.weights)): # over all layers
             if i == 0:
                 a = self.cam_inp(a, self.weights[i])
             else:
