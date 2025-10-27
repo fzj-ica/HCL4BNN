@@ -18,6 +18,8 @@ class GeneticAlgorithm:
         Function to evaluate individual fitness.
     genome_length : int
         Number of genes in each individual.
+    nmutbit : int
+        Mutated bits per genome.
     mutation_prob : float
         Mutation probability per bit.
     pop_size : int
@@ -32,23 +34,25 @@ class GeneticAlgorithm:
 
     def __init__(self, 
                  nn, 
-                 genome_length: int, 
-                 mutation_prob: float,
-                 pop_size:int = 200, 
+                 nmutbit: int = 3,
+                 pop_size: int = 200, 
                  cxpb: float = 0.8, 
                  ngen: int = 10, 
                  elite_size: int = 2, 
                  pool: Optional[object] = None):
         self.nn = nn
-        self.genome_length = genome_length
-        self.mutation_prob = mutation_prob
+        self.genome_length = nn.segm[-1]
+        self.mutation_prob = nmutbit / self.genome_length
         self.pop_size = pop_size
         self.cxpb = cxpb
         self.ngen = ngen
         self.elite_size = elite_size
         self.pool = pool  # Placeholder for multiprocessing pool if needed
 
-
+    def evaluate(self, indi):
+        acc, div = self.nn.evaluate()
+        return acc ,
+        
 
     def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
                             halloffame=None, verbose=True) -> Tuple[List, tools.Logbook]:
@@ -124,8 +128,8 @@ class GeneticAlgorithm:
     
     def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
-        eval_func = NNEvaluator(self.nn)
-        toolbox = create_toolbox(self.genome_length, self.mutation_prob, eval_func, self.pool)
+        # eval_func = NNEvaluator(self.nn)
+        toolbox = create_toolbox(self.genome_length, self.mutation_prob, self.evaluate, self.pool)
 
         print("Create init population...")
         time_start = time.time()
