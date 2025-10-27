@@ -5,14 +5,23 @@ from .base_dataset import BaseDataset
 from .utils import distill_uniform, uint12_to_redint, uint12_to_therm
 
 class SiPMDataset(BaseDataset):
-    def __init__(self, n_samples: int = 128, n_frames: int = 50):
+    def __init__(self, n_samples: int = 128, n_frames: int = 50, min_amp: int = 10):
         self.ADC_BITS = 12
         self.ADC_SAMPLES = n_samples
         self.ADC_MIN = 0
         self.ADC_MAX = (2 ** self.ADC_BITS) - 1
         self.ADC_ZERO = 2 ** (self.ADC_BITS - 1)
+        self.CLASSIFICATION  = "Signal"
+        
+        self.LABLES   = ["Good", "Ugly"] #, "Bad"]
+        self.LABLE_OTHER = "Either"
+        self.OUTCOMES = [[1,0], [0,1]]
+        self.DICT_TUPLE_TO_LABEL = dict( zip([tuple(l) for l in self.OUTCOMES], self.LABLES) )
 
+
+        # parameters for load_data relevant for Fitness
         self.n_frames = n_frames
+        self.min_amp = min_amp
 
     # =============================
     # Core Signal Functions
@@ -169,12 +178,6 @@ class SiPMDataset(BaseDataset):
     # ================================================
 
     # TODO: maybe better to use enums
-    CLASSIFICATION  = "Signal"
-
-    SIGNAL_LABLES   = ["Good", "Ugly"] #, "Bad"]
-    SIGNAL_LABLE_OTHER = "Either"
-    SIGNAL_OUTCOMES = [[1,0], [0,1]]
-    SIGNAL_DICT_TUPLE_TO_LABEL = dict( zip([tuple(l) for l in SIGNAL_OUTCOMES], SIGNAL_LABLES) )
 
     #CLASSIFICATION = "MNIST"
     #MNIST_LABLES   = [str(i) for i in range(10)]
@@ -228,10 +231,10 @@ class SiPMDataset(BaseDataset):
     def generate_waveforms(self):
         X_good = np.array([uint12_to_redint(self.sipm_adc()[1]) for _ in range(self.n_frames * 20)])
         X_ugly = np.array([uint12_to_redint(self.double_sipm_adc()[1]) for _ in range(self.n_frames * 20)])
-        X_good = distill_uniform(X_good, min_amp=10, sample_size=self.n_frames)
-        X_ugly = distill_uniform(X_ugly, min_amp=10, sample_size=self.n_frames)
+        X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
+        X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames)
         X = np.concatenate([X_good, X_ugly])
-        y = np.concatenate([np.tile([1, 0], (len(X_good), 1)), np.tile([0, 1], (len(X_ugly), 1))])
+        y = np.concatenate([np.tile(self.OUTCOMES[0], (len(X_good), 1)), np.tile(self.OUTCOMES[1], (len(X_ugly), 1))])
         return X, y
 
     # === BaseDataset API ===
