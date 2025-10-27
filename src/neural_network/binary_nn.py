@@ -284,8 +284,7 @@ class NN(BaseNeuralNetwork):
 #         return neurons_next
 
 
-    def run_nn(self, inp: np.ndarray, indi: np.ndarray) -> np.ndarray:
-    def run_nn(self, inp: np.ndarray, indi: np.ndarray) -> np.ndarray:
+    def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """
         Perform a forward pass through the neural network.
         
@@ -318,16 +317,8 @@ class NN(BaseNeuralNetwork):
     # ========================
     # Fitness / Evaluation (abstract methods)
     # ========================
-    def forward(self, x, indi):
+    def forward(self, x: np.ndarray) -> np.ndarray:
         """Perform one forward pass for one input x and individual indi."""
-        self.set_weights(indi)
-        self.set_summap(indi)   
-
-    def forward(self, x, indi):
-        """Perform one forward pass for one input x and individual indi."""
-        self.set_weights(indi)
-        self.set_summap(indi)   
-
         a = x
         for i in range(len(self.weights)): # over all layers
             if i == 0:
