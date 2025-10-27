@@ -88,7 +88,7 @@ class NN(BaseNeuralNetwork):
         self.segm = np.cumsum(np.concatenate([[0], self.NN[:-1] * self.NN[1:] * wght_len]))
         
         if individuals is None:
-            individuals = self.get_rand_indi(size=self.segm[-1])
+            individuals = self.get_rand_indi()
         elif len(individuals) != self.segm[-1]:
             raise ValueError(f"Expected individuals of length {self.segm[-1]}, got {len(individuals)}")
             
@@ -344,8 +344,10 @@ class NN(BaseNeuralNetwork):
     # Individual conversions
     # ========================
 
-    def get_rand_indi(self, size) -> np.ndarray:
+    def get_rand_indi(self, size=None) -> np.ndarray:
         """Generate a random individual (binary array)."""
+        if size is None:
+            size = self.segm[-1]
         return np.random.binomial(1, 0.65, size=size)
 
     def conv_from_indi_to_wght(self, indi: np.ndarray) -> List[np.ndarray]:
