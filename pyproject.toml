@@ -2,6 +2,7 @@
 name = "HCL4BNN"
 version = "0.1.0"
 description = "LUT-based neural network optimized with a genetic algorithm (BNN)"
+readme = "README.md"
 authors = [
     {name = "Alperen Aksoy", email = "a.aksoy@fz-juelich.de"},
     {name = "Ilja Bekman", email = "i.bekman@fz-juelich.de"}
@@ -9,15 +10,23 @@ authors = [
 requires-python = ">=3.9"
 keywords = ["sipm", "neural network", "genetic algorithm", "simulation", "bnn", "binarized neural network"]
 
-# Dependencies
+# TODO:
+#   classifiers
+#   urls
+#   license
+
 dependencies = [
     "numpy>=2.0",
     "deap>=1.3",
     "python-dateutil>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
     "ipykernel>=6.30.1",
     "ipython>=8.18",
+    "scipy>=1.13",
     "matplotlib>=3.9",
-    "scipy>=1.13"
 ]
 
 [build-system]
