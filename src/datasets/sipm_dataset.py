@@ -176,16 +176,6 @@ class SiPMDataset(BaseDataset):
     # ================================================
     # Generic input simulation functions for 2 classes
     # ================================================
-
-    # TODO: maybe better to use enums
-
-    #CLASSIFICATION = "MNIST"
-    #MNIST_LABLES   = [str(i) for i in range(10)]
-    #MNIST_LABLE_Other = str(MNIST_LABLES) # none-of-the-above label=next spare number
-    #MNIST_OUTCOMES = np.diag(np.ones(len(MNIST_LABLES), dtype=np.uint8)) # one-hot
-    #MNIST_DICT_tuple_to_label = dict( zip([tuple(l) for l in MNIST_OUTCOMES], MNIST_LABLES) )
-
-
     def signal_good_inp(self):
         return uint12_to_redint( self.sipm_adc()[1] )
 
@@ -203,9 +193,7 @@ class SiPMDataset(BaseDataset):
     # =============================
     # Data generation
     # =============================
-
-    
-    def gen_Data_Labled(self, n_frames: int = 50, min_amp: int = 10): # used to be dependent on NN[0], but = ADC_smpls
+    def gen_data_labled(self, n_frames: int = 50, min_amp: int = 10): # used to be dependent on NN[0], but = ADC_smpls
         Train_D_good = np.empty((n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
         for i in range(n_frames*20):
             Train_D_good[i,:] = self.signal_good_inp()
@@ -221,8 +209,8 @@ class SiPMDataset(BaseDataset):
             Train_D_good, 
             Train_D_bad
         ]) , np.concatenate([
-            np.tile(self.SIGNAL_OUTCOMES[0], (len(Train_D_good) , 1)) , 
-            np.tile(self.SIGNAL_OUTCOMES[1], (len(Train_D_bad)  , 1))
+            np.tile(self.OUTCOMES[0], (len(Train_D_good) , 1)) , 
+            np.tile(self.OUTCOMES[1], (len(Train_D_bad)  , 1))
         ])      
 
 

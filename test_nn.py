@@ -12,7 +12,7 @@ SiPM_clsfr = nn.NN(
 )
 
 
-wf, lb = sipm.gen_Data_Labled()
+wf, lb = sipm.gen_data_labled()
 
 
 try:
