@@ -171,25 +171,6 @@ class SiPMDataset(BaseDataset):
         x,y = self.nois_adc()
         return np.ravel(uint12_to_therm( y + 128 - self.ADC_ZERO ) )
 
-
-
-    # ================================================
-    # Generic input simulation functions for 2 classes
-    # ================================================
-    def signal_good_inp(self):
-        return uint12_to_redint( self.sipm_adc()[1] )
-
-    def signal_ugly_inp(self):
-        return uint12_to_redint( self.double_sipm_adc()[1] )
-
-    # for constraining/validating the network
-    def other_inp(self):
-        return np.random.randint(
-            low=uint12_to_redint(np.array([self.ADC_ZERO])),
-            high=uint12_to_redint(np.array([self.ADC_MAX])),
-            size=self.ADC_SAMPLES
-        )
-
     # =============================
     # Data generation
     # =============================
