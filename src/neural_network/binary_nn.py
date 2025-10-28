@@ -91,6 +91,7 @@ class NN(BaseNeuralNetwork):
             individual = self.get_rand_indi()
         elif len(individual) != self.segm[-1]:
             raise ValueError(f"Expected individual of length {self.segm[-1]}, got {len(individual)}")
+        self.individual = individual
             
         self.description = description or "NN"
         
