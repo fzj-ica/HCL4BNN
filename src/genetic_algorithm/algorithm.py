@@ -101,7 +101,7 @@ class GeneticAlgorithm:
 
             # Evaluate invalid offspring
             invalid = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = toolbox.map(toolbox.evaluate, invalid)
+            fitnesses = toolbox.map(toolbox.evaluate, invalid) # convert to NN here
             for ind, fit in zip(invalid, fitnesses):
                 ind.fitness.values = fit
 
@@ -129,7 +129,7 @@ class GeneticAlgorithm:
     def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
         # eval_func = NNEvaluator(self.nn)
-        toolbox = create_toolbox(self.genome_length, self.mutation_prob, self.nn.evaluate, self.pool)
+        toolbox = create_toolbox(self.genome_length, self.mutation_prob, self.evaluate, self.pool)
 
         print("Create init population...")
         time_start = time.time()

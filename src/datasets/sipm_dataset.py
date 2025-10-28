@@ -175,7 +175,7 @@ class SiPMDataset(BaseDataset):
     # Data generation
     # =============================
     def generate_waveforms(self) -> Tuple[np.ndarray, np.ndarray]:
-        """
+        """ 
         Generate good and bad waveforms + the labels
 
         Returns:
