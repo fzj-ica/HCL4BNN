@@ -11,6 +11,10 @@ Clone the repository and install dependencies:
 git clone git@icagit.zel.kfa-juelich.de:nc_fpga/bnn/sipm_bnn-python-package.git
 cd sipm_bnn-python-package
 pip install -e .
+
+# or (if used for development)
+
+pip install -e .[dev] 
 ```
 
 
