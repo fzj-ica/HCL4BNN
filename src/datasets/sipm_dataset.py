@@ -193,22 +193,22 @@ class SiPMDataset(BaseDataset):
     # =============================
     # Data generation
     # =============================
-    def gen_data_labled(self, n_frames: int = 50, min_amp: int = 10): # used to be dependent on NN[0], but = ADC_smpls
-        Train_D_good = np.empty((n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
-        for i in range(n_frames*20):
+    def gen_data_labled(self) -> Tuple[np.ndarray, np.ndarray]: # used to be dependent on NN[0], but = ADC_smpls
+        Train_D_good = np.empty((self.n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
+        for i in range(self.n_frames*20):
             Train_D_good[i,:] = self.signal_good_inp()
         
-        Train_D_bad = np.empty((n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
-        for i in range(n_frames*20):
+        Train_D_bad = np.empty((self.n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
+        for i in range(self.n_frames*20):
             Train_D_bad[i,:] = self.signal_ugly_inp()
 
-        Train_D_good = distill_uniform(Train_D_good, min_amp = min_amp, sample_size = n_frames)
-        Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = min_amp, sample_size = n_frames)
+        Train_D_good = distill_uniform(Train_D_good, min_amp = self.min_amp, sample_size = self.n_frames)
+        Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = self.min_amp, sample_size = self.n_frames)
 
         return np.concatenate([
             Train_D_good, 
             Train_D_bad
-        ]) , np.concatenate([
+        ]), np.concatenate([
             np.tile(self.OUTCOMES[0], (len(Train_D_good) , 1)) , 
             np.tile(self.OUTCOMES[1], (len(Train_D_bad)  , 1))
         ])      
