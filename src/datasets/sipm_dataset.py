@@ -193,30 +193,15 @@ class SiPMDataset(BaseDataset):
     # =============================
     # Data generation
     # =============================
-    def gen_data_labled(self) -> Tuple[np.ndarray, np.ndarray]: # used to be dependent on NN[0], but = ADC_smpls
-        Train_D_good = np.empty((self.n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
-        for i in range(self.n_frames*20):
-            Train_D_good[i,:] = self.signal_good_inp()
-        
-        Train_D_bad = np.empty((self.n_frames*20, self.ADC_SAMPLES), dtype=np.uint8)
-        for i in range(self.n_frames*20):
-            Train_D_bad[i,:] = self.signal_ugly_inp()
+    def generate_waveforms(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Generate good and bad waveforms + the labels
 
-        Train_D_good = distill_uniform(Train_D_good, min_amp = self.min_amp, sample_size = self.n_frames)
-        Train_D_bad  = distill_uniform(Train_D_bad,  min_amp = self.min_amp, sample_size = self.n_frames)
-
-        return np.concatenate([
-            Train_D_good, 
-            Train_D_bad
-        ]), np.concatenate([
-            np.tile(self.OUTCOMES[0], (len(Train_D_good) , 1)) , 
-            np.tile(self.OUTCOMES[1], (len(Train_D_bad)  , 1))
-        ])      
-
-
-
-    # === data generation ===
-    def generate_waveforms(self):
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: 
+                - X: The concatenated good and bad waveforms.
+                - y: The concatenated labels for X.
+        """
         X_good = np.array([uint12_to_redint(self.sipm_adc()[1]) for _ in range(self.n_frames * 20)])
         X_ugly = np.array([uint12_to_redint(self.double_sipm_adc()[1]) for _ in range(self.n_frames * 20)])
         X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
