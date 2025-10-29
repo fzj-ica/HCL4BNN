@@ -18,12 +18,12 @@ keywords = ["sipm", "neural network", "genetic algorithm", "simulation", "bnn", 
 dependencies = [
     "numpy>=1.26.2",
     "deap>=0.9.1",
-    "python-dateutil>=1.4",
+    "python-dateutil>=2.7.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ipykernel>=6.30.1",
+    "ipykernel>=4.0.1",
     "ipython>=8.18",
     "scipy>=1.13",
     "matplotlib>=3.9",
