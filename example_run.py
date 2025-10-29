@@ -11,18 +11,15 @@ def required_genome_length(self):
 
 if __name__ == "__main__":
     # GA parameters
-    genome_length = 2  # smaller genome for quick test
     mutation_prob = 0.05
     pop_size = 10       # small population for demo
     ngen = 5            # few generations
 
     # nn = NN((genome_length, 64, 128, 2), input=SiPMDataset(n_samples=genome_length))
-    nn = NN((2, 8, 2), input=SiPMDataset(n_samples=genome_length))
+    nn = NN((2, 8, 2), input=SiPMDataset())
 
     ga = GeneticAlgorithm(
         nn=nn, 
-        genome_length=genome_length,
-        mutation_prob=mutation_prob,
         pop_size=pop_size,
         ngen=ngen,
         elite_size=2

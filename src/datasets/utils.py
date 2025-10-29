@@ -1,12 +1,13 @@
 import numpy as np
 
-def distill_uniform(arr, min_amp=10, sample_size=100):
-    arr = arr[np.max(arr, axis=1) >= min_amp]
+def distill_uniform(arr, min_amp=10, sample_size=100, num_bins: int = 50):
+    arr = arr[np.max(arr, axis=1) >= min_amp] # Here arr contains 8 and therefore has no elem after this
     maxima = np.max(arr, axis=1)
-    bins = np.linspace(np.min(maxima), np.max(maxima), 51)
+    bins = np.linspace(np.min(maxima), np.max(maxima), num_bins + 1)
     idx = np.digitize(maxima, bins) - 1
-    weights = 1.0 / np.bincount(idx, minlength=len(bins)-1)[idx]
+    weights = 1.0 / np.bincount(idx, minlength=num_bins)[idx]
     weights /= np.sum(weights)
+    
     return arr[np.random.choice(len(arr), size=sample_size, p=weights)]
 
 # =============================
@@ -33,7 +34,7 @@ def uint12_to_therm(values: np.ndarray, num_bins: int = 16) -> np.ndarray:
     thermometer = (values[:, None] > thresholds).astype(np.uint8)
     return thermometer
 
-def uint12_to_redint(values: np.ndarray, num_bits: int = 7) -> np.ndarray:
+def uint12_to_redint(values: np.ndarray, adc_zero: int, adc_max: int, num_bits: int = 7) -> np.ndarray:
     """
     Convert 12-bit unsigned integer ADC values to a reduced integer representation with fewer bits.
 
@@ -49,6 +50,6 @@ def uint12_to_redint(values: np.ndarray, num_bits: int = 7) -> np.ndarray:
     np.ndarray
         Array of reduced integer values with the specified number of bits.
     """
-    offset = np.clip(np.asarray(values, dtype=np.int16) + 128 - 2048, 0, 4095)
+    offset = np.clip(np.asarray(values, dtype=np.uint16) + 128 - adc_zero, 0, adc_max - adc_zero)
     reduced = np.right_shift(offset, 12 - num_bits - 1)
     return reduced

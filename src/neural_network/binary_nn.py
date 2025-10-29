@@ -312,7 +312,7 @@ class NN(BaseNeuralNetwork):
         # Ensure input is within valid range
         inp = np.clip(inp, 0, self.inp_max)
         
-        return np.apply_along_axis(func1d=self.forward, axis=1, arr=inp)
+        return np.apply_along_axis(func1d=self.forward, axis=0, arr=inp)
 
     
     # ========================

@@ -50,7 +50,7 @@ class GeneticAlgorithm:
         self.pool = pool  # Placeholder for multiprocessing pool if needed
 
     def evaluate(self, indi):
-        acc, div = self.nn.evaluate()
+        acc, div = self.nn.evaluate(indi)
         return acc ,
         
 
