@@ -1,7 +1,9 @@
 import numpy as np
 from typing import Tuple, Optional, List
 from datasets.base_dataset import BaseDataset
+from datasets.sipm_dataset import SiPMDataset
 from neural_network.base_nn import BaseNeuralNetwork
+from genetic_algorithm.utils import tuple_to_label, confusion_matrix, diversity
 
 class NN(BaseNeuralNetwork):
     """
@@ -224,8 +226,6 @@ class NN(BaseNeuralNetwork):
 
         CAM_inp = np.vectorize(CAM_inp_scalar)
 
-        print(f"* inp: {inp} \n\n wght: {wght}")
-        print(f"* inp: {inp} \n\n wght: {wght}")
         return CAM_inp(inp, wght)
 
 #     def calc_layer(
@@ -310,7 +310,7 @@ class NN(BaseNeuralNetwork):
         #     raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
             
         # Ensure input is within valid range
-        inp = np.clip(inp, 0, self.inp_max)
+        # inp = np.clip(inp, 0, self.inp_max)
         
         return np.apply_along_axis(func1d=self.forward, axis=0, arr=inp)
 
@@ -356,21 +356,37 @@ class NN(BaseNeuralNetwork):
 
     #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
     
-    def fitness(self, indi):
-        print(f"individual: {indi}")
-        x, y = indi, self.input.load_data()[1]  # type: ignore
+    # def fitness(self, indi):
+    #     print(f"individual: {indi}")
+    #     x, y = indi, self.input.load_data()[1]  # type: ignore
 
-        res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
-        res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
+    #     res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
+    #     res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
 
-        return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
+    #     # TODO: return acc, div
+    #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
     
+    def fitness(self, indi):
+        # TODO: conv input to Sipm Dataset
+        X_good, X_ugly = self.input.gen_good_ugly_data() # type: ignore
+
+        # self.set_weights(indi) already converted in evaluate
+        # self.set_summap(indi)
+
+        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_good)
+        res_ugly = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_ugly)
+        
+        # acc = calc_accuracy(res_g, res_b)[0]
+        # div = diversity_score(res_g, res_b)
+        acc = self.calc_accuracy(res_g=res_good, res_b=res_ugly)[0]
+        div = diversity(res_good, res_ugly)
+        return acc , div
 
     def evaluate(self, x, y=None):
         indi = x
         self.set_weights(indi)
         self.set_summap(indi)
-        return (self.fitness(indi))
+        return self.fitness(indi)
 
 
     # def evaluate(self, x, y=None):
@@ -431,3 +447,19 @@ class NN(BaseNeuralNetwork):
 #     res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad)
 
 #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
+
+    def calc_accuracy(self, res_g, res_b,res_rand=np.tile([1,1]     , (0 , 1))):
+        # how_good = tuple_to_label(res_g) == SiPM_num_lbl
+        # how_good = on_target(res_g, SiPM_NNout)
+        # how_bad  = on_target(res_b, Nois_NNout)
+        sipm: SiPMDataset = self.input # type: ignore
+        y = sipm.load_data()[1]
+        all_probes  = tuple_to_label( np.concatenate( [res_g, res_b, res_rand] ) )
+        all_targets = tuple_to_label( np.concatenate( [
+                np.tile(y[0], (len(res_g) , 1)) , 
+                np.tile(y[1], (len(res_b) , 1)) ,
+                np.tile([1,1]     , (len(res_rand) , 1)) ,
+            ]) )
+
+        cm = confusion_matrix(all_probes,all_targets)
+        return  (cm[0,0]+cm[1,1])/(len(res_g)+len(res_b)), cm
