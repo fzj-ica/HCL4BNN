@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Tuple, Optional, List
 from datasets.base_dataset import BaseDataset
-from datasets.sipm_dataset import SiPMDataset
 from neural_network.base_nn import BaseNeuralNetwork
 from genetic_algorithm.utils import diversity
 from neural_network.utils import calc_accuracy
@@ -119,7 +118,7 @@ class NN(BaseNeuralNetwork):
     # Forward / Layer
     # ============================
     # aenderbar
-    def cam_neur(self, neur: np.ndarray, wght: np.ndarray) -> np.ndarray: 
+    def cam_neur(self, neur, wght: np.ndarray) -> np.ndarray: 
         """
         Perform CAM LUT lookup for neuron activation.
         
@@ -156,7 +155,7 @@ class NN(BaseNeuralNetwork):
         return self._CAM_LUT[idx]
     
     
-    def cam_inp(self, inp: np.ndarray, wght: np.ndarray) -> np.ndarray:
+    def cam_inp(self, inp: np.unsignedinteger, wght: np.ndarray) -> np.ndarray:
         """
         Compute the CAM (Content-Addressable Memory) input transformation based on
         the given input values and weight control signals.
@@ -230,7 +229,7 @@ class NN(BaseNeuralNetwork):
         return CAM_inp(inp, wght)
 
 
-    def run_nn(self, inp: np.ndarray) -> np.ndarray:
+    def run_nn(self, inp: np.ndarray) :
         """
         Perform a forward pass through the neural network.
         
@@ -249,39 +248,45 @@ class NN(BaseNeuralNetwork):
         ValueError
             If input shape doesn't match the first layer's expected input size.
         """
-        return np.apply_along_axis(func1d=self.forward, axis=0, arr=inp)
+        # for testing
+        #print("inp: ", inp) # X good = inp
+        a = np.uint8(inp)
+        for i in range(0,len(self.NN)-1):
+            a = self.forward(a, i)
+        return (a >= 2).astype(np.uint8)
+        # evtl axis 1
+        a = np.uint8(inp)
+        a = np.apply_along_axis(func1d=self.forward, axis=0, arr=a)
+        return (a >= 2).astype(np.uint8)
+
 
     
     # ========================
     # Fitness / Evaluation (abstract methods)
     # ========================
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: np.unsignedinteger, i: int):
         """Perform one forward pass for one input x and individual indi."""
+        #a = np.uint8(x)
         a = x
-        for i in range(len(self.weights)): # over all layers
-            if i == 0:
-                a = self.cam_inp(a, self.weights[i])
-            else:
-                a = self.cam_neur(a, self.weights[i])
-            neuron_sum = a.sum(axis=1)
-            bin_edges = self.summap[i]
-            a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
+        
+        if i == 0:
+            a = self.cam_inp(a, self.weights[i])
+        else:
+            a = self.cam_neur(a, self.weights[i])
+        neuron_sum = a.sum(axis=1)
+        bin_edges = self.summap[i]
+        a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
         return a  
 
     def fitness(self, indi):
-        # TODO: conv input to Sipm Dataset
         X_good, X_ugly = self.input.gen_good_ugly_data() # type: ignore
-
-        # self.set_weights(indi) already converted in evaluate
-        # self.set_summap(indi)
 
         res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_good)
         res_ugly = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_ugly)
         
-        # acc = calc_accuracy(res_g, res_b)[0]
-        # div = diversity_score(res_g, res_b)
         acc = calc_accuracy(res_g=res_good, res_b=res_ugly, labels=self.input.load_data()[1])[0] # type: ignore
         div = diversity(res_good, res_ugly)
+
         return acc , div, self.eval_size(indi)
 
     def eval_size(self, individual):
@@ -293,19 +298,6 @@ class NN(BaseNeuralNetwork):
         self.set_weights(indi)
         self.set_summap(indi)
         return self.fitness(indi)
-
-
-    # def evaluate(self, x, y=None):
-        # return self.fitness(x)
-        indi = x
-        self.set_weights(indi)
-        self.set_summap(indi)
-        return (self.fitness(indi))
-
-
-    # def evaluate(self, x, y=None):
-        # return self.fitness(x)
-
 
     # ========================
     # individual's conversions

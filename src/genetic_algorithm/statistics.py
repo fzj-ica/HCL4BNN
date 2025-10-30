@@ -19,14 +19,10 @@ def create_multi_stats():
     # For second objective
     stats2 = tools.Statistics(lambda ind: ind.fitness.values[1])
     stats2.register("max",  lambda x: round(max(x), 3))
-    # stats2.register("avg",  lambda x: round(np.mean(x), 3))
-    # stats2.register("min",  lambda x: round(min(x), 3))
     
     # For third objective
     stats3 = tools.Statistics(lambda ind: ind.fitness.values[2])
     stats3.register("max",  lambda x: round(max(x), 3))
-    # stats3.register("avg",  lambda x: round(np.mean(x), 3))
-    # stats3.register("min",  lambda x: round(min(x), 3))
     
     # Combine
     mstats = tools.MultiStatistics(fitness=stats, divers=stats2, size=stats3)

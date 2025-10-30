@@ -17,7 +17,7 @@ def create_toolbox(mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
     toolbox.register("mate", tools.cxUniform, indpb=0.5)
     toolbox.register("mutate", tools.mutFlipBit, indpb=mutation_prob)
     toolbox.register("select", tools.selTournament, tournsize=tourn_size)
-    toolbox.register("map", pool.map if pool else map)
+    # toolbox.register("map", pool.map if pool else map)
     return toolbox
 
 def rand_indi_segmented(ps, n_layer, segm):
@@ -33,3 +33,4 @@ def rand_indi_segmented(ps, n_layer, segm):
         extension = np.full(target_length - current_length, last_element)
         ps = np.concatenate([arr, extension])
     return np.concatenate( [  np.random.binomial(1, ps[s], size=(segm[s+1] - segm[s])) for s in range(n_layer-1)  ] )
+

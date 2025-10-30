@@ -48,8 +48,8 @@ class GeneticAlgorithm:
     
 
     def evaluate(self, indi):
-        acc, div, eval_size = self.nn.evaluate(indi)
-        return acc * div, acc, eval_size
+        fit, div, eval_size = self.nn.evaluate(indi)
+        return fit * div, fit, eval_size
         
 
     def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
@@ -117,12 +117,6 @@ class GeneticAlgorithm:
             for ind, fit in zip(invalid, fitnesses):
                 ind.fitness.values = fit
 
-            # Evaluate the individuals with an invalid fitness
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-            for ind, fit in zip(invalid_ind, fitnesses):
-                ind.fitness.values = fit
-
             # Update the hall of fame with the generated individuals
             if halloffame is not None:
                 halloffame.update(offspring)
@@ -138,7 +132,7 @@ class GeneticAlgorithm:
 
             # Append the current generation statistics to the logbook
             record = stats.compile(population) if stats else {}
-            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+            logbook.record(gen=gen, nevals=len(invalid), **record)
             logbook.genlog.append(tools.selBest(population, 1)[0]) # type: ignore
             if verbose:
                 print(logbook.stream)
