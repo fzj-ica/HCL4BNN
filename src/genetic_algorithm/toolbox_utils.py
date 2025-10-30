@@ -1,7 +1,7 @@
 from deap import base, creator, tools
 import numpy as np
 
-def create_toolbox(genome_length, mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
+def create_toolbox(mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
     # if not hasattr(creator, "FitnessMax"):
     #     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     if not hasattr(creator, "FitnessMaxSmall"):

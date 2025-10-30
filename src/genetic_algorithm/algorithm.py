@@ -131,7 +131,7 @@ class GeneticAlgorithm:
     def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
         # eval_func = NNEvaluator(self.nn)
-        toolbox = create_toolbox(self.genome_length, self.mutation_prob, self.evaluate, self.nn, pool=self.pool)
+        toolbox = create_toolbox(self.mutation_prob, self.evaluate, self.nn, pool=self.pool)
 
         print("Create init population...")
         time_start = time.time()
