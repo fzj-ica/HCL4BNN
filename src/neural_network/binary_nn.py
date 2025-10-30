@@ -3,7 +3,8 @@ from typing import Tuple, Optional, List
 from datasets.base_dataset import BaseDataset
 from datasets.sipm_dataset import SiPMDataset
 from neural_network.base_nn import BaseNeuralNetwork
-from genetic_algorithm.utils import tuple_to_label, confusion_matrix, diversity
+from genetic_algorithm.utils import diversity
+from neural_network.utils import calc_accuracy
 
 class NN(BaseNeuralNetwork):
     """
@@ -228,62 +229,6 @@ class NN(BaseNeuralNetwork):
 
         return CAM_inp(inp, wght)
 
-#     def calc_layer(
-#     self,
-#     layer_pre: np.ndarray,
-#     layer_pre_idx: int,
-#     verbose: bool=True,
-# ) -> np.ndarray:
-#         """
-#         Compute the activations of the next layer in a simple feed-forward network.
-
-#         Returns
-#         -------
-#         np.ndarray, dtype uint8, shape (n_next,)
-#             The digitised activations of the next layer.
-#         """
-#         if verbose:
-#             print("* Input:")
-#             print(layer_pre.shape)
-#             time.sleep(0.001)
-#         # ------------------------------------------------------------------ #
-#         layer_weights = self.weights[layer_pre_idx]
-
-#         if layer_pre_idx == 0:
-#             weighted = self.cam_inp(layer_pre, layer_weights)
-#         else:
-#             weighted = self.cam_neur(layer_pre, layer_weights)
-
-#         if verbose:
-#             print("* weighted:")
-#             print(weighted.shape)
-#             time.sleep(0.001)
-
-#         # ------------------------------------------------------------------ #
-#         neuron_sum = weighted.sum(axis=1)               # shape (n_next,)
-#         if verbose:
-#             print("* neuron_sum:")
-#             print(neuron_sum.shape)
-        
-#         # ------------------------------------------------------------------ #
-#         bin_edges = self.summap[layer_pre_idx]            # shape (n_next, n_bins)
-#         if verbose:
-#             print("* bin_edges:")
-#             print(bin_edges.shape)
-        
-
-#         # Digitise using ReLU-like activation (TODO: change for input layer)
-#         ReLu_2bit = np.fromiter(    (np.digitize(x, b) for x, b in zip(neuron_sum, bin_edges)),    dtype=np.uint8)
-#         # ReLu_2bit = np.array( [ np.digitize(neuron_sum[i], b) for i,b in enumerate(bin_edges) ] )
-
-#         if verbose:
-#             print("* ReLu_2bit:")
-#             print(list(bin_edges)[:10], ReLu_2bit.shape)
-
-#         neurons_next = ReLu_2bit
-        
-#         return neurons_next
-
 
     def run_nn(self, inp: np.ndarray) -> np.ndarray:
         """
@@ -304,14 +249,6 @@ class NN(BaseNeuralNetwork):
         ValueError
             If input shape doesn't match the first layer's expected input size.
         """
-        # if inp.shape[-1] != self.NN[0]:
-        #     raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
-        # if inp.shape[-1] != self.NN[0]:
-        #     raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
-            
-        # Ensure input is within valid range
-        # inp = np.clip(inp, 0, self.inp_max)
-        
         return np.apply_along_axis(func1d=self.forward, axis=0, arr=inp)
 
     
@@ -329,43 +266,8 @@ class NN(BaseNeuralNetwork):
             neuron_sum = a.sum(axis=1)
             bin_edges = self.summap[i]
             a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
-        return a
+        return a  
 
-    # def fitness(self, indi):
-    #     print(f"Individual: {indi}")
-    #     x_good, x_bad = indi, self.input.load_data()[1]  # type: ignore
-
-    #     res_good = [self.run_nn(x, indi) for x in x_good]
-    #     res_bad = [self.run_nn(x, indi) for x in x_bad]
-        
-    #     # res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
-    #     # res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
-
-    #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-    
-
-    # def fitness(self, indi):
-    #     print(f"Individual: {indi}")
-    #     x_good, x_bad = indi, self.input.load_data()[1]  # type: ignore
-
-    #     res_good = [self.run_nn(x, indi) for x in x_good]
-    #     res_bad = [self.run_nn(x, indi) for x in x_bad]
-        
-    #     # res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
-    #     # res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
-
-    #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-    
-    # def fitness(self, indi):
-    #     print(f"individual: {indi}")
-    #     x, y = indi, self.input.load_data()[1]  # type: ignore
-
-    #     res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
-    #     res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
-
-    #     # TODO: return acc, div
-    #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-    
     def fitness(self, indi):
         # TODO: conv input to Sipm Dataset
         X_good, X_ugly = self.input.gen_good_ugly_data() # type: ignore
@@ -378,7 +280,7 @@ class NN(BaseNeuralNetwork):
         
         # acc = calc_accuracy(res_g, res_b)[0]
         # div = diversity_score(res_g, res_b)
-        acc = self.calc_accuracy(res_g=res_good, res_b=res_ugly)[0]
+        acc = calc_accuracy(res_g=res_good, res_b=res_ugly, labels=self.input.load_data()[1])[0] # type: ignore
         div = diversity(res_good, res_ugly)
         return acc , div, self.eval_size(indi)
 
@@ -432,38 +334,3 @@ class NN(BaseNeuralNetwork):
             nonzero = (self.NN[i] - np.uint8(self.conv_from_indi_to_wght(indi)[i] == 0).sum(axis = 1))
             summap.append(np.array(nonzero[:, np.newaxis] * [0.5, 1.5, 2.5], dtype=np.uint16))
         return summap
-    
-
-    
-
-
-# Just for testing / example
-# def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
-#     """Return SiPM (good) and noise (bad) training data."""
-#     Train_D_good = np.array([self.input.sipm_therm() for _ in range(2)], dtype=np.uint8)
-#     Train_D_bad  = np.array([self.input.nois_therm() for _ in range(2)], dtype=np.uint8)
-#     return Train_D_good, Train_D_bad
-
-# def fitness(self) -> int:
-#     Train_D_good, Train_D_bad = self.calc_fitness()
-
-#     res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good)
-#     res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad)
-
-#     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-
-    def calc_accuracy(self, res_g, res_b,res_rand=np.tile([1,1]     , (0 , 1))):
-        # how_good = tuple_to_label(res_g) == SiPM_num_lbl
-        # how_good = on_target(res_g, SiPM_NNout)
-        # how_bad  = on_target(res_b, Nois_NNout)
-        sipm: SiPMDataset = self.input # type: ignore
-        y = sipm.load_data()[1]
-        all_probes  = tuple_to_label( np.concatenate( [res_g, res_b, res_rand] ) )
-        all_targets = tuple_to_label( np.concatenate( [
-                np.tile(y[0], (len(res_g) , 1)) , 
-                np.tile(y[1], (len(res_b) , 1)) ,
-                np.tile([1,1]     , (len(res_rand) , 1)) ,
-            ]) )
-
-        cm = confusion_matrix(all_probes,all_targets)
-        return  (cm[0,0]+cm[1,1])/(len(res_g)+len(res_b)), cm

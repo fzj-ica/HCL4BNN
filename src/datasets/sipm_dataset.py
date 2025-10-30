@@ -210,9 +210,6 @@ class SiPMDataset(BaseDataset):
         X_ugly = np.empty((n, self.ADC_SAMPLES), dtype=np.uint8)
         for i in range(n):
             X_ugly[i,:] = uint12_to_redint(self.double_sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX)
-        
-        print(f"X good: {X_good}")
-        print(f"X ugly: {X_ugly}")
 
         X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
         X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames)

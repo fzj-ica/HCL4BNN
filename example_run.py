@@ -26,7 +26,5 @@ if __name__ == "__main__":
     print("Best fitness:", ga.nn.fitness(hof[0]))
     print("GA run complete.\n")
     # Example run for the HCL4BNN package
-    print(f"log: \n{log}")
-    print(f"pop: \n{pop}")
 
 

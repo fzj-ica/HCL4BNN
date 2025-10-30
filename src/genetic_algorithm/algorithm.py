@@ -56,7 +56,7 @@ class GeneticAlgorithm:
         
 
     def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
-                            halloffame=None, verbose=True) -> Tuple[List, tools.Logbook]:
+                            halloffame=None, elites=0, verbose=True) -> Tuple[List, tools.Logbook]:
         """
         Simple evolutionary algorithm with elitism.
 
@@ -76,6 +76,7 @@ class GeneticAlgorithm:
         """
         logbook = tools.Logbook()
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else []) # type: ignore
+        logbook.genlog = []
 
         # Evaluate initial population
         invalid = [ind for ind in population if not ind.fitness.valid]
@@ -85,6 +86,8 @@ class GeneticAlgorithm:
 
         if halloffame is not None:
             halloffame.update(population)
+        if len(halloffame) < elites:
+            elites = len(halloffame)
         
 
         record = stats.compile(population) if stats else {}
@@ -94,12 +97,22 @@ class GeneticAlgorithm:
 
         # Evolutionary loop
         for gen in range(1, self.ngen + 1):
-            # Select and clone offspring
-            offspring = toolbox.select(population, len(population) - self.elite_size)
-            offspring = list(map(toolbox.clone, offspring))
+            # Select the next generation individuals
+            offspring = toolbox.select(population, int(len(population)*1.01))
+            # offspring = list(map(toolbox.clone, offspring))
 
             # Apply crossover and mutation
             offspring = algorithms.varAnd(offspring, toolbox, self.cxpb, self.mutation_prob)
+
+            # Vary the pool of individuals
+            if len(population) > len(offspring):
+                fillers = algorithms.varAnd(offspring[:], toolbox, self.cxpb, self.mutation_prob)[:len(population) - len(offspring)]
+                offspring.extend(fillers)
+            if elites > 0:
+                old_best_idx = tools.selBest(population, elites)
+                for best_i in old_best_idx:
+                    del best_i.fitness.values
+                offspring.extend(old_best_idx)
 
             # Evaluate invalid offspring
             invalid = [ind for ind in offspring if not ind.fitness.valid]
@@ -107,20 +120,29 @@ class GeneticAlgorithm:
             for ind, fit in zip(invalid, fitnesses):
                 ind.fitness.values = fit
 
-            # Add elites back
-            elites = tools.selBest(population, self.elite_size)
-            offspring.extend(map(toolbox.clone, elites))
+            # Evaluate the individuals with an invalid fitness
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+            for ind, fit in zip(invalid_ind, fitnesses):
+                ind.fitness.values = fit
 
-            # Update hall of fame
+            # Update the hall of fame with the generated individuals
             if halloffame is not None:
                 halloffame.update(offspring)
 
-            # Replace population
-            population[:] = offspring
 
-            # Record stats
+            # Replace the current population by the offspring, remove worst if too long e.g. due to elitism
+            if len(offspring) > len(population):
+                worst_idx = tools.selWorst(offspring, len(offspring)-len(population))
+                for worst_one in worst_idx: 
+                    offspring.remove(worst_one)
+
+            population[:] = offspring[:]
+
+            # Append the current generation statistics to the logbook
             record = stats.compile(population) if stats else {}
-            logbook.record(gen=gen, nevals=len(invalid), **record)
+            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+            logbook.genlog.append(tools.selBest(population, 1)[0])
             if verbose:
                 print(logbook.stream)
 
