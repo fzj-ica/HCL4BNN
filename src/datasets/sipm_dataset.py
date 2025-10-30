@@ -19,10 +19,10 @@ class SiPMDataset(BaseDataset):
         self.OUTCOMES = [[1,0], [0,1]]
         self.DICT_TUPLE_TO_LABEL = dict( zip([tuple(l) for l in self.OUTCOMES], self.LABLES) )
 
-
         # parameters for load_data relevant for Fitness
         self.n_frames = n_frames
         self.min_amp = min_amp
+
 
     # =============================
     # Core Signal Functions
@@ -177,12 +177,27 @@ class SiPMDataset(BaseDataset):
     # =============================
     def generate_waveforms(self) -> Tuple[np.ndarray, np.ndarray]:
         """ 
-        Generate good and bad waveforms + the labels
+        Generate good and ugly waveforms + the labels
 
         Returns:
             Tuple[np.ndarray, np.ndarray]: 
                 - X: The concatenated good and bad waveforms.
                 - y: The concatenated labels for X.
+        """
+        X_good, X_ugly = self.gen_good_ugly_data()
+        
+        X = np.concatenate([X_good, X_ugly])
+        y = np.concatenate([np.tile(self.OUTCOMES[0], (len(X_good), 1)), np.tile(self.OUTCOMES[1], (len(X_ugly), 1))])
+        return X, y
+    
+    def gen_good_ugly_data(self):
+        """ 
+        Generate good and ugly waveforms
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: 
+                - X_good: The good waveforms
+                - X_bad: The ugly Waveforms
         """
         n = self.n_frames * 20
 
@@ -202,9 +217,7 @@ class SiPMDataset(BaseDataset):
         X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
         X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames)
         
-        X = np.concatenate([X_good, X_ugly])
-        y = np.concatenate([np.tile(self.OUTCOMES[0], (len(X_good), 1)), np.tile(self.OUTCOMES[1], (len(X_ugly), 1))])
-        return X, y
+        return X_good, X_ugly
 
     # === BaseDataset API ===
     def load_data(self):
