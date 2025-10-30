@@ -1,12 +1,9 @@
-from typing import Callable, List, Optional, Tuple
-from deap import base, creator, tools, algorithms
+from typing import List, Optional, Tuple
+from deap import tools, algorithms
 import time
-import numpy as np
 
-from genetic_algorithm.evaluation import NNEvaluator
-from .utils import time_elapsed, diversity
 from .toolbox_utils import create_toolbox
-from .statistics import create_multi_stats, create_stats
+from .statistics import create_multi_stats
 
 class GeneticAlgorithm:
     """
@@ -76,7 +73,7 @@ class GeneticAlgorithm:
         """
         logbook = tools.Logbook()
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else []) # type: ignore
-        logbook.genlog = []
+        logbook.genlog = [] # type: ignore
 
         # Evaluate initial population
         invalid = [ind for ind in population if not ind.fitness.valid]
@@ -86,8 +83,8 @@ class GeneticAlgorithm:
 
         if halloffame is not None:
             halloffame.update(population)
-        if len(halloffame) < elites:
-            elites = len(halloffame)
+            if len(halloffame) < elites:
+                elites = len(halloffame)
         
 
         record = stats.compile(population) if stats else {}
@@ -142,7 +139,7 @@ class GeneticAlgorithm:
             # Append the current generation statistics to the logbook
             record = stats.compile(population) if stats else {}
             logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-            logbook.genlog.append(tools.selBest(population, 1)[0])
+            logbook.genlog.append(tools.selBest(population, 1)[0]) # type: ignore
             if verbose:
                 print(logbook.stream)
 

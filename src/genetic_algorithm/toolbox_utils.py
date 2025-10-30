@@ -10,7 +10,6 @@ def create_toolbox(mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
         creator.create("Individual", list, fitness=creator.FitnessMaxSmall)  # type: ignore
 
     toolbox = base.Toolbox()
-    toolbox.register("attr_bool", np.random.binomial, 1, 0.8)
     toolbox.register("attr_bool_segmented", lambda: rand_indi_segmented([0.57, 0.85], len(nn.NN), nn.segm))
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.attr_bool_segmented) # type: ignore
     toolbox.register("population", tools.initRepeat, list, toolbox.individual) # type: ignore
