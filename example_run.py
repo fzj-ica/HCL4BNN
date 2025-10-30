@@ -2,12 +2,6 @@ from neural_network.binary_nn import NN
 from datasets.sipm_dataset import SiPMDataset
 from genetic_algorithm.algorithm import GeneticAlgorithm
 
-def required_genome_length(self):
-    total = 0
-    for i in range(len(self.NN) - 1):
-        total += self.NN[i] * self.NN[i + 1] * 2  # 2 bits pro Gewicht
-    return total
-
 
 if __name__ == "__main__":
     # GA parameters
