@@ -6,7 +6,7 @@ import numpy as np
 from genetic_algorithm.evaluation import NNEvaluator
 from .utils import time_elapsed, diversity
 from .toolbox_utils import create_toolbox
-from .statistics import create_stats
+from .statistics import create_multi_stats, create_stats
 
 class GeneticAlgorithm:
     """
@@ -49,9 +49,15 @@ class GeneticAlgorithm:
         self.elite_size = elite_size
         self.pool = pool  # Placeholder for multiprocessing pool if needed
 
+    # TODO
+    # def eval_size(self, individual):
+    #     zero_genes = np.sum( [len(np.where( np.ravel( i )==0)[0]) for i in conv_from_indi_to_wght(individual)] )
+    #     return zero_genes  / ( len(individual)/2)
+
     def evaluate(self, indi):
         acc, div = self.nn.evaluate(indi)
-        return acc ,
+        # siz = eval_size(indi)
+        return acc * div, acc, 10
         
 
     def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
@@ -84,6 +90,7 @@ class GeneticAlgorithm:
 
         if halloffame is not None:
             halloffame.update(population)
+        
 
         record = stats.compile(population) if stats else {}
         logbook.record(gen=0, nevals=len(invalid), **record)
@@ -139,16 +146,11 @@ class GeneticAlgorithm:
         # Stats & Hall of Fame
         hof = tools.HallOfFame(self.elite_size)
 
-        stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register("avg", lambda x: sum(x[0])/len(x[0]))
-        stats.register("min", min)
-        stats.register("max", max)
-        stats.register("diversity", diversity)
-        stats.register("time", lambda _: time_elapsed(time_start))
+        mstats = create_multi_stats()
         
 
         print("Start evolution...")
-        pop, log = self._ea_simple_with_elitism(pop, toolbox, stats=stats, halloffame=hof)
+        pop, log = self._ea_simple_with_elitism(pop, toolbox, stats=mstats, halloffame=hof)
         print("Evolution finished.")
 
         return pop, log, hof
