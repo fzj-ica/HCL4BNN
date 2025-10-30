@@ -380,7 +380,11 @@ class NN(BaseNeuralNetwork):
         # div = diversity_score(res_g, res_b)
         acc = self.calc_accuracy(res_g=res_good, res_b=res_ugly)[0]
         div = diversity(res_good, res_ugly)
-        return acc , div
+        return acc , div, self.eval_size(indi)
+
+    def eval_size(self, individual):
+        zero_genes = np.sum( [len(np.where( np.ravel( i )==0)[0]) for i in self.weights] )
+        return zero_genes  / ( len(individual)/2)
 
     def evaluate(self, x, y=None):
         indi = x

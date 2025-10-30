@@ -48,16 +48,11 @@ class GeneticAlgorithm:
         self.ngen = ngen
         self.elite_size = elite_size
         self.pool = pool  # Placeholder for multiprocessing pool if needed
-
-    # TODO
-    # def eval_size(self, individual):
-    #     zero_genes = np.sum( [len(np.where( np.ravel( i )==0)[0]) for i in conv_from_indi_to_wght(individual)] )
-    #     return zero_genes  / ( len(individual)/2)
+    
 
     def evaluate(self, indi):
-        acc, div = self.nn.evaluate(indi)
-        # siz = eval_size(indi)
-        return acc * div, acc, 10
+        acc, div, eval_size = self.nn.evaluate(indi)
+        return acc * div, acc, eval_size
         
 
     def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
