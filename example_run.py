@@ -14,9 +14,10 @@ if __name__ == "__main__":
     mutation_prob = 0.05
     pop_size = 10       # small population for demo
     ngen = 5            # few generations
+    n_samples = 128
 
     # nn = NN((genome_length, 64, 128, 2), input=SiPMDataset(n_samples=genome_length))
-    nn = NN((2, 8, 2), input=SiPMDataset())
+    nn = NN((n_samples, 16, 128, 2), input=SiPMDataset(n_samples=n_samples))
 
     ga = GeneticAlgorithm(
         nn=nn, 
