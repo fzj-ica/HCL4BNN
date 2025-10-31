@@ -36,7 +36,7 @@ class GeneticAlgorithm:
                  cxpb: float = 0.8, 
                  ngen: int = 10, 
                  elite_size: int = 2, 
-                 pool: Optional[object] = None):
+                 pool_nproc: int = None):
         self.nn = nn
         self.genome_length = nn.segm[-1]
         self.mutation_prob = nmutbit / self.genome_length
@@ -44,7 +44,7 @@ class GeneticAlgorithm:
         self.cxpb = cxpb
         self.ngen = ngen
         self.elite_size = elite_size
-        self.pool = pool  # Placeholder for multiprocessing pool if needed
+        self.pool_nproc = pool_nproc 
     
 
     def evaluate(self, indi):
@@ -144,7 +144,13 @@ class GeneticAlgorithm:
     def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
         # eval_func = NNEvaluator(self.nn)
-        toolbox = create_toolbox(self.mutation_prob, self.evaluate, self.nn, pool=self.pool)
+        if self.pool_nproc and self.pool_nproc > 1:
+            import multiprocessing
+            pool = multiprocessing.Pool(self.pool_nproc)
+        else:
+            pool = None
+        
+        toolbox = create_toolbox(self.mutation_prob, self.evaluate, self.nn, pool=pool)
 
         print("Create init population...")
         time_start = time.time()

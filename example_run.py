@@ -17,7 +17,8 @@ if __name__ == "__main__":
         nn=nn, 
         pop_size=pop_size,
         ngen=ngen,
-        elite_size=2
+        elite_size=2,
+        pool_nproc=12
     )
 
     pop, log, hof = ga.run()
