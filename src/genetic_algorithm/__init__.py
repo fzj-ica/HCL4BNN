@@ -1,5 +1,5 @@
 from .algorithm import GeneticAlgorithm
-from .utils import diversity, time_elapsed
+from .utils import diversity, time_elapsed, tuple_to_label
 from .statistics import create_stats
 from .toolbox_utils import create_toolbox
 from .evaluation import NNEvaluator
@@ -10,5 +10,6 @@ __all__ = [
     "time_elapsed",
     "create_stats",
     "create_toolbox",
-    "NNEvaluator"
+    "NNEvaluator",
+    "tuple_to_label"
 ]
