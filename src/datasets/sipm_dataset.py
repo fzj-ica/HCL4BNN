@@ -9,8 +9,9 @@ class SiPMDataset(BaseDataset):
         self.ADC_BITS = 12
         self.ADC_SAMPLES = n_samples
         self.ADC_MIN = 0
-        self.ADC_MAX = (2 ** self.ADC_BITS) - 1
-        self.ADC_ZERO = 2 ** (self.ADC_BITS - 1)
+
+        self.ADC_MAX = 2 ** self.ADC_BITS - 1
+        self.ADC_ZERO = 2 ** (self.ADC_BITS - 1) - 0
         self.CLASSIFICATION  = "Signal"
         
         self.LABLES   = ["Good", "Ugly"] #, "Bad"]
@@ -18,10 +19,10 @@ class SiPMDataset(BaseDataset):
         self.OUTCOMES = [[1,0], [0,1]]
         self.DICT_TUPLE_TO_LABEL = dict( zip([tuple(l) for l in self.OUTCOMES], self.LABLES) )
 
-
         # parameters for load_data relevant for Fitness
         self.n_frames = n_frames
         self.min_amp = min_amp
+
 
     # =============================
     # Core Signal Functions
@@ -81,17 +82,17 @@ class SiPMDataset(BaseDataset):
         amp: float =  chrg * (self.ADC_MAX-self.ADC_ZERO) * 1.3
         par: list[float] = [amp, 4, 14*chrg*random.uniform(1.0,1.4)]
         Dx: np.ndarray = np.linspace(-1, self.ADC_SAMPLES-1, 500)
-        Dy: np.ndarray = self.isg(Dx, par) + self.ADC_ZERO # TODO: par should be tuple
+        Dy: np.ndarray = self.isg(Dx, par) + self.ADC_ZERO
         Dx: np.ndarray = Dx - Dx[0]
         return Dx, Dy
 
     def sipm_adc(self) -> Tuple[np.ndarray, np.ndarray]:
         """Generate digitised SiPM waveform (ADC samples)."""
-        chrg = random.uniform(0.1,1)
-        amp =  chrg * (self.ADC_MAX-self.ADC_ZERO) * 1.3
-        par = [amp,4,14*chrg*random.uniform(1.0,1.4)]
+        chrg = random.uniform(0.1, 1)
+        amp =  chrg * (self.ADC_MAX - self.ADC_ZERO) * 1.3
+        par = [amp, 4 * random.uniform(0.6, 1.5), 14 * chrg * random.uniform(0.2, 1.4)]
         Dx = np.linspace(-1, self.ADC_SAMPLES-2, self.ADC_SAMPLES)
-        Dy = self.isg(Dx,par) + self.ADC_ZERO # TODO: par should be tuple
+        Dy = self.isg(Dx, par) + self.ADC_ZERO 
         Dx = Dx - Dx[0]
         Dy = np.digitize(Dy, np.arange(1, self.ADC_MAX + 1))
         return Dx, Dy
@@ -103,7 +104,7 @@ class SiPMDataset(BaseDataset):
         amp =  chrg * (self.ADC_MAX*0.01)
         par = [amp, 0.001 * chrg * random.uniform(1.0,1.4)]
         Dx = np.linspace(-1, self.ADC_SAMPLES-2, self.ADC_SAMPLES)
-        Dy = self.nois(Dx, par) + self.ADC_ZERO # TODO: par should be tuple
+        Dy = self.nois(Dx, par) + self.ADC_ZERO 
         Dx = Dx - Dx[0]
         Dy = np.digitize(Dy, np.arange(1, self.ADC_MAX + 1))
         return Dx, Dy
@@ -175,21 +176,45 @@ class SiPMDataset(BaseDataset):
     # Data generation
     # =============================
     def generate_waveforms(self) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Generate good and bad waveforms + the labels
+        """ 
+        Generate good and ugly waveforms + the labels
 
         Returns:
             Tuple[np.ndarray, np.ndarray]: 
                 - X: The concatenated good and bad waveforms.
                 - y: The concatenated labels for X.
         """
-        X_good = np.array([uint12_to_redint(self.sipm_adc()[1]) for _ in range(self.n_frames * 20)])
-        X_ugly = np.array([uint12_to_redint(self.double_sipm_adc()[1]) for _ in range(self.n_frames * 20)])
-        X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
-        X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames)
+        X_good, X_ugly = self.gen_good_ugly_data()
+        
         X = np.concatenate([X_good, X_ugly])
         y = np.concatenate([np.tile(self.OUTCOMES[0], (len(X_good), 1)), np.tile(self.OUTCOMES[1], (len(X_ugly), 1))])
         return X, y
+    
+    def gen_good_ugly_data(self):
+        """ 
+        Generate good and ugly waveforms
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: 
+                - X_good: The good waveforms
+                - X_bad: The ugly Waveforms
+        """
+        n = self.n_frames * 20
+
+        # X_good = np.array([uint12_to_redint(self.sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX) for _ in range(self.n_frames * 20)])
+        X_good = np.empty((n, self.ADC_SAMPLES), dtype=np.uint8)
+        for i in range(n):
+            X_good[i,:] = uint12_to_redint(self.sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX)
+        
+        # X_ugly = np.array([uint12_to_redint(self.double_sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX) for _ in range(self.n_frames * 20)])
+        X_ugly = np.empty((n, self.ADC_SAMPLES), dtype=np.uint8)
+        for i in range(n):
+            X_ugly[i,:] = uint12_to_redint(self.double_sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX)
+
+        X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
+        X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames)
+        
+        return X_good, X_ugly
 
     # === BaseDataset API ===
     def load_data(self):

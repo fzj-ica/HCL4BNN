@@ -1,12 +1,9 @@
-from typing import Callable, List, Optional, Tuple
-from deap import base, creator, tools, algorithms
+from typing import List, Optional, Tuple
+from deap import tools, algorithms
 import time
-import numpy as np
 
-from genetic_algorithm.evaluation import NNEvaluator
-from .utils import time_elapsed, diversity
 from .toolbox_utils import create_toolbox
-from .statistics import create_stats
+from .statistics import create_multi_stats
 
 class GeneticAlgorithm:
     """
@@ -48,14 +45,15 @@ class GeneticAlgorithm:
         self.ngen = ngen
         self.elite_size = elite_size
         self.pool = pool  # Placeholder for multiprocessing pool if needed
+    
 
     def evaluate(self, indi):
-        acc, div = self.nn.evaluate()
-        return acc ,
+        fit, div, eval_size = self.nn.evaluate(indi)
+        return fit * div, fit, eval_size
         
 
     def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
-                            halloffame=None, verbose=True) -> Tuple[List, tools.Logbook]:
+                            halloffame=None, elites=0, verbose=True) -> Tuple[List, tools.Logbook]:
         """
         Simple evolutionary algorithm with elitism.
 
@@ -75,6 +73,7 @@ class GeneticAlgorithm:
         """
         logbook = tools.Logbook()
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else []) # type: ignore
+        logbook.genlog = [] # type: ignore
 
         # Evaluate initial population
         invalid = [ind for ind in population if not ind.fitness.valid]
@@ -84,6 +83,9 @@ class GeneticAlgorithm:
 
         if halloffame is not None:
             halloffame.update(population)
+            if len(halloffame) < elites:
+                elites = len(halloffame)
+        
 
         record = stats.compile(population) if stats else {}
         logbook.record(gen=0, nevals=len(invalid), **record)
@@ -92,33 +94,46 @@ class GeneticAlgorithm:
 
         # Evolutionary loop
         for gen in range(1, self.ngen + 1):
-            # Select and clone offspring
-            offspring = toolbox.select(population, len(population) - self.elite_size)
-            offspring = list(map(toolbox.clone, offspring))
+            # Select the next generation individuals
+            offspring = toolbox.select(population, int(len(population)*1.01))
+            # offspring = list(map(toolbox.clone, offspring))
 
             # Apply crossover and mutation
             offspring = algorithms.varAnd(offspring, toolbox, self.cxpb, self.mutation_prob)
 
+            # Vary the pool of individuals
+            if len(population) > len(offspring):
+                fillers = algorithms.varAnd(offspring[:], toolbox, self.cxpb, self.mutation_prob)[:len(population) - len(offspring)]
+                offspring.extend(fillers)
+            if elites > 0:
+                old_best_idx = tools.selBest(population, elites)
+                for best_i in old_best_idx:
+                    del best_i.fitness.values
+                offspring.extend(old_best_idx)
+
             # Evaluate invalid offspring
             invalid = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = toolbox.map(toolbox.evaluate, invalid)
+            fitnesses = toolbox.map(toolbox.evaluate, invalid) # convert to NN here
             for ind, fit in zip(invalid, fitnesses):
                 ind.fitness.values = fit
 
-            # Add elites back
-            elites = tools.selBest(population, self.elite_size)
-            offspring.extend(map(toolbox.clone, elites))
-
-            # Update hall of fame
+            # Update the hall of fame with the generated individuals
             if halloffame is not None:
                 halloffame.update(offspring)
 
-            # Replace population
-            population[:] = offspring
 
-            # Record stats
+            # Replace the current population by the offspring, remove worst if too long e.g. due to elitism
+            if len(offspring) > len(population):
+                worst_idx = tools.selWorst(offspring, len(offspring)-len(population))
+                for worst_one in worst_idx: 
+                    offspring.remove(worst_one)
+
+            population[:] = offspring[:]
+
+            # Append the current generation statistics to the logbook
             record = stats.compile(population) if stats else {}
             logbook.record(gen=gen, nevals=len(invalid), **record)
+            logbook.genlog.append(tools.selBest(population, 1)[0]) # type: ignore
             if verbose:
                 print(logbook.stream)
 
@@ -129,7 +144,7 @@ class GeneticAlgorithm:
     def run(self) -> Tuple[List, tools.Logbook, tools.HallOfFame]:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
         # eval_func = NNEvaluator(self.nn)
-        toolbox = create_toolbox(self.genome_length, self.mutation_prob, self.nn.evaluate, self.pool)
+        toolbox = create_toolbox(self.mutation_prob, self.evaluate, self.nn, pool=self.pool)
 
         print("Create init population...")
         time_start = time.time()
@@ -139,16 +154,11 @@ class GeneticAlgorithm:
         # Stats & Hall of Fame
         hof = tools.HallOfFame(self.elite_size)
 
-        stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register("avg", lambda x: sum(x[0])/len(x[0]))
-        stats.register("min", min)
-        stats.register("max", max)
-        stats.register("diversity", diversity)
-        stats.register("time", lambda _: time_elapsed(time_start))
+        mstats = create_multi_stats()
         
 
         print("Start evolution...")
-        pop, log = self._ea_simple_with_elitism(pop, toolbox, stats=stats, halloffame=hof)
+        pop, log = self._ea_simple_with_elitism(pop, toolbox, stats=mstats, halloffame=hof)
         print("Evolution finished.")
 
         return pop, log, hof
