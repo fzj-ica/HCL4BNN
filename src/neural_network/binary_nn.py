@@ -2,6 +2,10 @@ import numpy as np
 from typing import Tuple, Optional, List
 from datasets.base_dataset import BaseDataset
 from neural_network.base_nn import BaseNeuralNetwork
+from genetic_algorithm.utils import diversity
+from neural_network.utils import calc_accuracy
+from datasets.sipm_dataset import SiPMDataset
+from datasets.utils import uint12_to_redint
 
 class NN(BaseNeuralNetwork):
     """
@@ -45,9 +49,9 @@ class NN(BaseNeuralNetwork):
     def __init__(self, 
                  layers: Tuple[int, ...] = (128, 16, 128, 2), 
                  input: Optional[BaseDataset] = None, # just optional for now
+                 # in bits
                  neur_len: int = 2, 
                  inp_len: int = 7, 
-                 bias_len: int = 2, 
                  wght_len: int = 2,
                  individual: Optional[np.ndarray] = None, 
                  description: Optional[str] = None) -> None:
@@ -73,12 +77,11 @@ class NN(BaseNeuralNetwork):
         """
         if not all(n > 0 for n in layers):
             raise ValueError("All layer sizes must be positive integers")
-        if not all(isinstance(x, int) and x > 0 for x in [neur_len, inp_len, bias_len, wght_len]):
+        if not all(isinstance(x, int) and x > 0 for x in [neur_len, inp_len, wght_len]):
             raise ValueError("All bit lengths must be positive integers")
             
         self.NN = np.array(layers, dtype=np.int32)
         self.neur_len = neur_len
-        self.bias_len = bias_len
         self.wght_len = wght_len
         self.inp_len = inp_len
         self.inp_max = np.uint16((1 << inp_len) - 1)
@@ -108,7 +111,7 @@ class NN(BaseNeuralNetwork):
         self.summap = self.conv_from_indi_to_summap(indi)
 
     def __str__(self) -> str:
-        return f"{self.description} Net: {self.NN}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit, Bias: {self.bias_len}-bit"
+        return f"{self.description} Net: {self.NN}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit"
     
     
     
@@ -116,7 +119,7 @@ class NN(BaseNeuralNetwork):
     # Forward / Layer
     # ============================
     # aenderbar
-    def cam_neur(self, neur: np.ndarray, wght: np.ndarray) -> np.ndarray: 
+    def cam_neur(self, neur, wght: np.ndarray) -> np.ndarray: 
         """
         Perform CAM LUT lookup for neuron activation.
         
@@ -153,7 +156,7 @@ class NN(BaseNeuralNetwork):
         return self._CAM_LUT[idx]
     
     
-    def cam_inp(self, inp: np.ndarray, wght: np.ndarray) -> np.ndarray:
+    def cam_inp(self, inp: np.unsignedinteger, wght: np.ndarray) -> np.ndarray:
         """
         Compute the CAM (Content-Addressable Memory) input transformation based on
         the given input values and weight control signals.
@@ -224,68 +227,10 @@ class NN(BaseNeuralNetwork):
 
         CAM_inp = np.vectorize(CAM_inp_scalar)
 
-        print(f"* inp: {inp} \n\n wght: {wght}")
-        print(f"* inp: {inp} \n\n wght: {wght}")
         return CAM_inp(inp, wght)
 
-#     def calc_layer(
-#     self,
-#     layer_pre: np.ndarray,
-#     layer_pre_idx: int,
-#     verbose: bool=True,
-# ) -> np.ndarray:
-#         """
-#         Compute the activations of the next layer in a simple feed-forward network.
 
-#         Returns
-#         -------
-#         np.ndarray, dtype uint8, shape (n_next,)
-#             The digitised activations of the next layer.
-#         """
-#         if verbose:
-#             print("* Input:")
-#             print(layer_pre.shape)
-#             time.sleep(0.001)
-#         # ------------------------------------------------------------------ #
-#         layer_weights = self.weights[layer_pre_idx]
-
-#         if layer_pre_idx == 0:
-#             weighted = self.cam_inp(layer_pre, layer_weights)
-#         else:
-#             weighted = self.cam_neur(layer_pre, layer_weights)
-
-#         if verbose:
-#             print("* weighted:")
-#             print(weighted.shape)
-#             time.sleep(0.001)
-
-#         # ------------------------------------------------------------------ #
-#         neuron_sum = weighted.sum(axis=1)               # shape (n_next,)
-#         if verbose:
-#             print("* neuron_sum:")
-#             print(neuron_sum.shape)
-        
-#         # ------------------------------------------------------------------ #
-#         bin_edges = self.summap[layer_pre_idx]            # shape (n_next, n_bins)
-#         if verbose:
-#             print("* bin_edges:")
-#             print(bin_edges.shape)
-        
-
-#         # Digitise using ReLU-like activation (TODO: change for input layer)
-#         ReLu_2bit = np.fromiter(    (np.digitize(x, b) for x, b in zip(neuron_sum, bin_edges)),    dtype=np.uint8)
-#         # ReLu_2bit = np.array( [ np.digitize(neuron_sum[i], b) for i,b in enumerate(bin_edges) ] )
-
-#         if verbose:
-#             print("* ReLu_2bit:")
-#             print(list(bin_edges)[:10], ReLu_2bit.shape)
-
-#         neurons_next = ReLu_2bit
-        
-#         return neurons_next
-
-
-    def run_nn(self, inp: np.ndarray) -> np.ndarray:
+    def run_nn(self, inp: np.ndarray) :
         """
         Perform a forward pass through the neural network.
         
@@ -304,86 +249,56 @@ class NN(BaseNeuralNetwork):
         ValueError
             If input shape doesn't match the first layer's expected input size.
         """
-        # if inp.shape[-1] != self.NN[0]:
-        #     raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
-        # if inp.shape[-1] != self.NN[0]:
-        #     raise ValueError(f"Input size {inp.shape[-1]} doesn't match network input layer size {self.NN[0]}")
-            
-        # Ensure input is within valid range
-        inp = np.clip(inp, 0, self.inp_max)
-        
-        return np.apply_along_axis(func1d=self.forward, axis=1, arr=inp)
+        # for testing
+        a = np.uint8(inp)
+        for i in range(0,len(self.NN)-1):
+            a = self.forward(a, i)
+        return (a >= 2).astype(np.uint8)
+
+        a = np.uint8(inp)
+        a = np.apply_along_axis(func1d=self.forward, axis=0, arr=a)
+        return (a >= 2).astype(np.uint8)
+
 
     
     # ========================
     # Fitness / Evaluation (abstract methods)
     # ========================
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x, i: int):
         """Perform one forward pass for one input x and individual indi."""
+        #a = np.uint8(x)
         a = x
-        for i in range(len(self.weights)): # over all layers
-            if i == 0:
-                a = self.cam_inp(a, self.weights[i])
-            else:
-                a = self.cam_neur(a, self.weights[i])
-            neuron_sum = a.sum(axis=1)
-            bin_edges = self.summap[i]
-            a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
-        return a
-
-    # def fitness(self, indi):
-    #     print(f"Individual: {indi}")
-    #     x_good, x_bad = indi, self.input.load_data()[1]  # type: ignore
-
-    #     res_good = [self.run_nn(x, indi) for x in x_good]
-    #     res_bad = [self.run_nn(x, indi) for x in x_bad]
         
-    #     # res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
-    #     # res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
+        if i == 0:
+            a = self.cam_inp(a, self.weights[i])
+        else:
+            a = self.cam_neur(a, self.weights[i])
+        neuron_sum = a.sum(axis=1)
+        bin_edges = self.summap[i]
+        a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
+        return a  
 
-    #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-    
-
-    # def fitness(self, indi):
-    #     print(f"Individual: {indi}")
-    #     x_good, x_bad = indi, self.input.load_data()[1]  # type: ignore
-
-    #     res_good = [self.run_nn(x, indi) for x in x_good]
-    #     res_bad = [self.run_nn(x, indi) for x in x_bad]
-        
-    #     # res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
-    #     # res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
-
-    #     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-    
     def fitness(self, indi):
-        print(f"individual: {indi}")
-        x, y = indi, self.input.load_data()[1]  # type: ignore
+        X_good, X_ugly = self.input.gen_good_ugly_data() # type: ignore
 
-        res_good = np.apply_along_axis(func1d=self.run_nn, axis=0, arr=x)
-        res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=y)
+        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_good)
+        res_ugly = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_ugly)
+        
+        acc = calc_accuracy(res_g=res_good, res_b=res_ugly, labels=self.input.load_data()[1])[0] # type: ignore
+        div = diversity(res_good, res_ugly)
 
-        return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)
-    
+        return acc , div, self.eval_size(indi)
+
+    def eval_size(self, individual):
+        zero_genes = np.sum( [len(np.where( np.ravel( i )==0)[0]) for i in self.weights] )
+        return zero_genes  / ( len(individual)/2)
+
 
     def evaluate(self, x, y=None):
         indi = x
         self.set_weights(indi)
         self.set_summap(indi)
-        return (self.fitness(indi))
-
-
-    # def evaluate(self, x, y=None):
-        # return self.fitness(x)
-        indi = x
-        self.set_weights(indi)
-        self.set_summap(indi)
-        return (self.fitness(indi))
-
-
-    # def evaluate(self, x, y=None):
-        # return self.fitness(x)
-
+        return self.fitness(indi)
 
     # ========================
     # individual's conversions
@@ -399,35 +314,22 @@ class NN(BaseNeuralNetwork):
         """Convert binary individual to 2-bit weight matrices per layer."""
         arr =  np.array(indi, dtype=np.int8)
         wghtlist: List[np.ndarray] = [] 
-        for i,s in enumerate( zip( self.segm [:len(self.NN)+1],  self.segm [1:len(self.NN)] ) ):
-            iwght = arr[slice(*s)].reshape([self.NN[i+1], self.NN[i],2])
+        for i, s in enumerate(zip(self.segm[:len(self.NN)+1], self.segm[1:len(self.NN)])):
+            iwght = arr[slice(*s)].reshape([self.NN[i+1], self.NN[i], 2])
             iwght_2bit = (iwght[:, :, 0]) | (iwght[:, :, 1] << 1)
             wghtlist.append(iwght_2bit)
         return wghtlist
 
     def conv_from_indi_to_summap(self, indi: np.ndarray) -> List[np.ndarray]:
         """Compute sum maps for ReLU digitisation."""
-        summap: List[np.ndarray] = []
+        summap = []
+        self.set_weights(indi)
+        sipm: SiPMDataset = self.input # type: ignore
         for i in range(0, len(self.NN) - 1):
-            nonzero = (self.NN[i] - np.uint8(self.conv_from_indi_to_wght(indi)[i] == 0).sum(axis = 1))
-            summap.append(np.array(nonzero[:, np.newaxis] * [0.5, 1.5, 2.5], dtype=np.uint16))
+            nonzero = (self.NN[i] - np.uint8(self.weights[i] == 0).sum(axis = 1))
+            
+            if i==0:
+                summap.append(np.uint32(nonzero[:,np.newaxis] * [0.25, 0.5, 0.75] * (uint12_to_redint(sipm.ADC_MAX, sipm.ADC_ZERO, sipm.ADC_MAX) - uint12_to_redint(sipm.ADC_ZERO, sipm.ADC_ZERO, sipm.ADC_MAX)) * 1))
+            else:
+                summap.append(np.uint32(nonzero[:,np.newaxis] * [0.5, 1.5, 2.5]))
         return summap
-    
-
-    
-
-
-# Just for testing / example
-# def calc_fitness(self) -> Tuple[np.ndarray, np.ndarray]:
-#     """Return SiPM (good) and noise (bad) training data."""
-#     Train_D_good = np.array([self.input.sipm_therm() for _ in range(2)], dtype=np.uint8)
-#     Train_D_bad  = np.array([self.input.nois_therm() for _ in range(2)], dtype=np.uint8)
-#     return Train_D_good, Train_D_bad
-
-# def fitness(self) -> int:
-#     Train_D_good, Train_D_bad = self.calc_fitness()
-
-#     res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_good)
-#     res_bad = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=Train_D_bad)
-
-#     return np.sum(res_good == 1) + np.sum(res_bad == 0) + np.sum(res_good == res_bad)

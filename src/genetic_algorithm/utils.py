@@ -4,10 +4,9 @@ from typing import List
 
 import numpy as np
 
-def diversity(pop: List) -> float:
-    """Fraction of unique genotypes."""
-    unique = len({tuple(ind) for ind in pop})
-    return unique / len(pop)
+def diversity(res_g, res_b):
+    assert len(res_g)==len(res_b), f"{len(res_g)} {len(res_b)}"
+    return np.sum(np.uint8(res_g != res_b)) / 2 / len(res_g)
 
 def time_elapsed(time_start: float) -> str:
     """Return elapsed time string."""
