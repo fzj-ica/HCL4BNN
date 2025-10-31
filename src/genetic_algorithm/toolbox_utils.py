@@ -1,7 +1,7 @@
 from deap import base, creator, tools
 import numpy as np
 
-def create_toolbox(mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
+def create_toolbox(mutation_prob, cxpb, tourn_size, eval_func, nn, pool=None):
     # if not hasattr(creator, "FitnessMax"):
     #     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     if not hasattr(creator, "FitnessMaxSmall"):
@@ -14,7 +14,7 @@ def create_toolbox(mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.attr_bool_segmented) # type: ignore
     toolbox.register("population", tools.initRepeat, list, toolbox.individual) # type: ignore
     toolbox.register("evaluate", eval_func)
-    toolbox.register("mate", tools.cxUniform, indpb=0.5)
+    toolbox.register("mate", tools.cxUniform, indpb=cxpb)
     toolbox.register("mutate", tools.mutFlipBit, indpb=mutation_prob)
     toolbox.register("select", tools.selTournament, tournsize=tourn_size)
     if pool:
