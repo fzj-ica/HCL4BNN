@@ -4,6 +4,8 @@ from datasets.base_dataset import BaseDataset
 from neural_network.base_nn import BaseNeuralNetwork
 from genetic_algorithm.utils import diversity
 from neural_network.utils import calc_accuracy
+from datasets.sipm_dataset import SiPMDataset
+from datasets.utils import uint12_to_redint
 
 class NN(BaseNeuralNetwork):
     """
@@ -312,16 +314,22 @@ class NN(BaseNeuralNetwork):
         """Convert binary individual to 2-bit weight matrices per layer."""
         arr =  np.array(indi, dtype=np.int8)
         wghtlist: List[np.ndarray] = [] 
-        for i,s in enumerate( zip( self.segm [:len(self.NN)+1],  self.segm [1:len(self.NN)] ) ):
-            iwght = arr[slice(*s)].reshape([self.NN[i+1], self.NN[i],2])
+        for i, s in enumerate(zip(self.segm[:len(self.NN)+1], self.segm[1:len(self.NN)])):
+            iwght = arr[slice(*s)].reshape([self.NN[i+1], self.NN[i], 2])
             iwght_2bit = (iwght[:, :, 0]) | (iwght[:, :, 1] << 1)
             wghtlist.append(iwght_2bit)
         return wghtlist
 
     def conv_from_indi_to_summap(self, indi: np.ndarray) -> List[np.ndarray]:
         """Compute sum maps for ReLU digitisation."""
-        summap: List[np.ndarray] = []
+        summap = []
+        self.set_weights(indi)
+        sipm: SiPMDataset = self.input # type: ignore
         for i in range(0, len(self.NN) - 1):
-            nonzero = (self.NN[i] - np.uint8(self.conv_from_indi_to_wght(indi)[i] == 0).sum(axis = 1))
-            summap.append(np.array(nonzero[:, np.newaxis] * [0.5, 1.5, 2.5], dtype=np.uint16))
+            nonzero = (self.NN[i] - np.uint8(self.weights[i] == 0).sum(axis = 1))
+            
+            if i==0:
+                summap.append(np.uint32(nonzero[:,np.newaxis] * [0.25, 0.5, 0.75] * (uint12_to_redint(sipm.ADC_MAX, sipm.ADC_ZERO, sipm.ADC_MAX) - uint12_to_redint(sipm.ADC_ZERO, sipm.ADC_ZERO, sipm.ADC_MAX)) * 1))
+            else:
+                summap.append(np.uint32(nonzero[:,np.newaxis] * [0.5, 1.5, 2.5]))
         return summap

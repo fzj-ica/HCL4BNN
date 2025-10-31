@@ -34,7 +34,7 @@ def uint12_to_therm(values: np.ndarray, num_bins: int = 16) -> np.ndarray:
     thermometer = (values[:, None] > thresholds).astype(np.uint8)
     return thermometer
 
-def uint12_to_redint(values: np.ndarray, adc_zero: int, adc_max: int, num_bits: int = 7) -> np.ndarray:
+def uint12_to_redint(values, adc_zero: int, adc_max: int, num_bits: int = 7) -> np.ndarray:
     """
     Convert 12-bit unsigned integer ADC values to a reduced integer representation with fewer bits.
 
