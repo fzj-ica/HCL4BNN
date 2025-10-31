@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 from deap import tools, algorithms
+import multiprocessing
 import time
 
 from .toolbox_utils import create_toolbox
@@ -145,7 +146,6 @@ class GeneticAlgorithm:
         """Run the genetic algorithm and return population, logbook, Hall of Fame."""
         # eval_func = NNEvaluator(self.nn)
         if self.pool_nproc and self.pool_nproc > 1:
-            import multiprocessing
             pool = multiprocessing.Pool(self.pool_nproc)
         else:
             pool = None
