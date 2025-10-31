@@ -47,9 +47,9 @@ class NN(BaseNeuralNetwork):
     def __init__(self, 
                  layers: Tuple[int, ...] = (128, 16, 128, 2), 
                  input: Optional[BaseDataset] = None, # just optional for now
+                 # in bits
                  neur_len: int = 2, 
                  inp_len: int = 7, 
-                 bias_len: int = 2, 
                  wght_len: int = 2,
                  individual: Optional[np.ndarray] = None, 
                  description: Optional[str] = None) -> None:
@@ -75,12 +75,11 @@ class NN(BaseNeuralNetwork):
         """
         if not all(n > 0 for n in layers):
             raise ValueError("All layer sizes must be positive integers")
-        if not all(isinstance(x, int) and x > 0 for x in [neur_len, inp_len, bias_len, wght_len]):
+        if not all(isinstance(x, int) and x > 0 for x in [neur_len, inp_len, wght_len]):
             raise ValueError("All bit lengths must be positive integers")
             
         self.NN = np.array(layers, dtype=np.int32)
         self.neur_len = neur_len
-        self.bias_len = bias_len
         self.wght_len = wght_len
         self.inp_len = inp_len
         self.inp_max = np.uint16((1 << inp_len) - 1)
@@ -110,7 +109,7 @@ class NN(BaseNeuralNetwork):
         self.summap = self.conv_from_indi_to_summap(indi)
 
     def __str__(self) -> str:
-        return f"{self.description} Net: {self.NN}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit, Bias: {self.bias_len}-bit"
+        return f"{self.description} Net: {self.NN}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit"
     
     
     
@@ -249,12 +248,11 @@ class NN(BaseNeuralNetwork):
             If input shape doesn't match the first layer's expected input size.
         """
         # for testing
-        #print("inp: ", inp) # X good = inp
         a = np.uint8(inp)
         for i in range(0,len(self.NN)-1):
             a = self.forward(a, i)
         return (a >= 2).astype(np.uint8)
-        # evtl axis 1
+
         a = np.uint8(inp)
         a = np.apply_along_axis(func1d=self.forward, axis=0, arr=a)
         return (a >= 2).astype(np.uint8)
@@ -264,7 +262,7 @@ class NN(BaseNeuralNetwork):
     # ========================
     # Fitness / Evaluation (abstract methods)
     # ========================
-    def forward(self, x: np.unsignedinteger, i: int):
+    def forward(self, x, i: int):
         """Perform one forward pass for one input x and individual indi."""
         #a = np.uint8(x)
         a = x
@@ -292,6 +290,7 @@ class NN(BaseNeuralNetwork):
     def eval_size(self, individual):
         zero_genes = np.sum( [len(np.where( np.ravel( i )==0)[0]) for i in self.weights] )
         return zero_genes  / ( len(individual)/2)
+
 
     def evaluate(self, x, y=None):
         indi = x
