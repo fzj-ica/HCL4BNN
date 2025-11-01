@@ -333,3 +333,253 @@ class NN(BaseNeuralNetwork):
             else:
                 summap.append(np.uint32(nonzero[:,np.newaxis] * [0.5, 1.5, 2.5]))
         return summap
+
+    def write_VHDL(self, filename: str = "./BNN_inst.vhd"):
+        NN = self.NN.tolist()
+
+        NNwgth = self.weights
+        NNsummap = self.summap
+        keep_l = [None]*len(NN) # only needed at VHDL conversion step
+
+        VHD=open(filename, "w")
+
+        VHD_HEAD=f"""--  {filename}
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+library work;
+use work.BNN_pack.all;
+
+
+entity BNN_forward is
+    Port (
+    input_i : in std_logic_vector({NN[0]}*input_width-1 downto 0);
+    output_o : out std_logic_vector({NN[-1]}-1 downto 0)
+    );
+end BNN_forward;
+
+architecture arch_imp of BNN_forward is
+        """
+
+        VHD.write(VHD_HEAD)
+        print(VHD_HEAD)
+        T=f"""
+type t_NN_layout  is array (0 to {len(NN)}-1) of integer;
+-- max index = width-1 
+constant NN_width: t_NN_layout := ({", ".join([f"{i}-1" for i in NN])});
+        """
+
+        VHD.write(T)
+        print(T)
+
+
+        T=""
+
+        T+=f"type t_layer_n{0} is array (0 to NN_width({0}) ) of input_smpl;"
+        T+="\n"
+        T+=f"signal layer_n{0}: t_layer_n{0} := (others => (others => '0'));"
+        T+="\n"
+        T+="\n"
+
+
+        for L in range(1, len(NN)):
+            T+=f"type t_sum_n{L} is array (0 to NN_width({L}) ) of neursum;"
+            T+="\n"
+            if True:
+                T+=f"signal sum_n{L}: t_sum_n{L} := (others => (others => '0'));"
+                T+="\n"
+                T+=f"type t_layer_n{L} is array (0 to NN_width({L}) ) of neur;"
+            T+="\n"
+            T+=f"signal layer_n{L}: t_layer_n{L} := (others => (others => '0'));"
+            T+="\n"
+            # T+=f"type t_bias_n{L} is array (0 to NN_width({L}) ) of bias;"
+            # T+="\n"
+
+            T+="\n"
+
+
+        VHD.write(T)
+        print(T)
+
+        T="\n\n"
+        VHD.write(T)
+
+        for L in range(len(NN)-1):
+            T+=f"type t_weight_n{L}_n{L+1} is array (0 to NN_width({L+1}) , 0 to NN_width({L}) ) of wght;"
+            T+="\n"
+        VHD.write(T)
+        print(T)
+
+        T="\n\n"
+        VHD.write(T)
+
+
+        for L in range(1,len(NN)):
+            T+=f"type t_summap_n{L} is array (0 to NN_width({L}) ) of neursum_map;"
+            T+="\n"
+        VHD.write(T)
+        print(T)
+
+        T="\n\n"
+        VHD.write(T)
+
+
+
+
+        T=""
+        for L in range(len(NN)-1):
+            T = f"constant weight_n{L}_n{L+1}: t_weight_n{L}_n{L+1} := (\n"
+            VHD.write(T)
+            print(T)
+            ll = L
+            
+            for o in range(NN[ll+1]):
+                T = "("
+                for i in range(NN[ll]):
+                    w=np.binary_repr(NNwgth[ll][o][i],2)
+                    T += f"b\"{w}\"" +  (", " if i < NN[ll]-1 else ")\n")
+                    # T += f"'{(NNwgth[L].ravel()[i*(NN[ll+1]) +o]+1)//2}'"  +  ("," if o < NN[ll+1]-1 else ")\n")
+                    # T += f"b\"{np.binary_repr(NNwgth[ll].ravel()[o*(NN[ll+1]) +i],2)}\" {o,i,o*(NN[ll]) +i}"  +  (", " if i < NN[ll+1]-1 else ")\n")
+                    # T += f"'{(NNwgth[L].ravel()[i*(NN[ll+1]) +o]+1)//2}'"  +  ("," if o < NN[ll+1]-1 else ")\n")
+                
+                T += ("," if o < NN[ll+1]-1 else ");") + "\n" 
+                VHD.write(T)
+                print(T)
+
+            T = "\n"
+            print(T)
+            VHD.write(T)
+
+        T="\n\n"
+        VHD.write(T)
+        print(T)
+
+
+
+        T=""
+        for L in range(1,len(NN)):
+            T += f"constant summap_n{L}: t_summap_n{L} := ( "
+            # for o in range(NN[L]):
+            T += ','.join( [  f"({ ','.join( map(str,s)) })"  for s in NNsummap[L-1]] )
+            # T += f"{'),\n('.join( map(str,s )) }"
+            # T += f"{-int(NN[L]/2)} , {int(NN[L]/2)} , {int(NN[L]*3/2)}"       
+            # T += f"{int(NN[L]*3*1/4)} , {int(NN[L]*3*1/2)} , {int(NN[L]*3*3/4)}"       
+            
+            T += ");\n" 
+        print(T)
+
+        T+="\n\n"
+        VHD.write(T)
+
+
+
+        T="\nattribute KEEP : string;\n"
+        T += f"{"" if keep_l[0] else "-- "}attribute KEEP of layer_n{0} : signal is \"TRUE\";\n"
+        for L in range(1,len(NN)-1):
+            T += f"{"" if keep_l[L] else "-- "}attribute KEEP of layer_n{L} : signal is \"TRUE\";\n"
+        T += f"{"" if keep_l[len(NN)-1] else "-- "}attribute KEEP of layer_n{len(NN)-1} : signal is \"TRUE\";\n"
+
+        print(T)
+
+        T+="\n\n"
+        VHD.write(T)
+
+
+        T="\n\nbegin\n\n"
+        VHD.write(T)
+        T=""
+        for n in range(NN[0]):
+            if False:
+                T += f"layer_n0({n}) <= input_i({n});-- & not input_i({n});\n"
+                T += f"layer_n0({n}) <= input_i({n}) & not input_i({n});\n"
+            else:
+                T += f"layer_n0({n}) <= unsigned(  input_i({(n+1)*self.inp_len}-1 downto {n*self.inp_len}) ) ;\n"
+
+        T+="\n\n"
+
+        for n in range(NN[-1]):
+            # output_o(0) <= '1' when unsigned( layer_n3(0) ) > 1 else '0';
+            # output_o(1) <= '1' when unsigned( layer_n3(1) ) > 1 else '0';
+            T += f"output_o({n}) <= layer_n{len(NN)-1}({n})(1);\n"
+            # T += f"output_o({n+1}) <= layer_n{len(NN)-1}({n})(1);\n"
+
+        print(T)
+
+        T+="\n\n"
+        VHD.write(T)
+
+
+        L=0
+        T=""
+        T += f"calc_layer_n{L+1}:   for n{L+1} in 0 to NN_width({L+1}) generate\n"
+        T += f"sum_n{L+1}(n{L+1}) <= \n"
+        n2 = int( 2**np.ceil(np.log2(NN[L])) )
+        S=["" for i in range(n2+1)]
+        for i in range(n2+1):
+            S[i] += "+"
+
+
+        for B in range( 1, int(np.log2(n2))+1 ):
+            for i in range( int((n2+1)/(2**B))+1 ):
+                S[i*(2**B)] = ")" + S[i*(2**B)] + "("
+            
+
+        S[0] = S[0].split('+')[1]
+        S[-1] = S[-1].split('+')[0]
+
+
+        for i in range(NN[L]):
+            T += f" {S[i]} \n inp_ws(layer_n{L}({i}),weight_n{L}_n{L+1}(n{L+1},{i})) \n"
+        for i in range(NN[L],n2):
+            T += f" {S[i]} \n 0 \n"
+        T += f" {S[-1]};\n"
+
+
+        T += f"layer_n{L+1}(n{L+1}) <= neur_act( sum_n{L+1}(n{L+1}) , summap_n{L+1}(n{L+1})) ;\nend generate;\n" 
+        T += "\n"
+        print(T)
+        VHD.write(T)
+
+
+        for L in range(1, len(NN)-1):
+            T=""
+            T += f"calc_layer_n{L+1}:   for n{L+1} in 0 to NN_width({L+1}) generate\n"
+            T += f"sum_n{L+1}(n{L+1}) <= \n"
+            n2 = int( 2**np.ceil(np.log2(NN[L])) )
+            S=["" for i in range(n2+1)]
+            for i in range(n2+1):
+                S[i] += "+"
+            
+            
+            for B in range( 1, int(np.log2(n2))+1 ):
+                for i in range( int((n2+1)/(2**B))+1 ):
+                    S[i*(2**B)] = ")" + S[i*(2**B)] + "("
+                
+
+            S[0] = S[0].split('+')[1]
+            S[-1] = S[-1].split('+')[0]
+
+            
+            for i in range(NN[L]):
+                T += f" {S[i]} \n neur_ws(layer_n{L}({i}),weight_n{L}_n{L+1}(n{L+1},{i})) \n"
+            for i in range(NN[L],n2):
+                T += f" {S[i]} \n 0 \n"
+            T += f" {S[-1]};\n"
+            ### nested sum with brackets
+
+
+            # T += f"layer_n{L+1}(n{L+1}) <= neur_b( neur_act( sum_n{L+1}(n{L+1}) , summap_n{L+1}), bias_n{L+1}(n{L+1}) );\nend generate;\n" 
+            T += f"layer_n{L+1}(n{L+1}) <= neur_act( sum_n{L+1}(n{L+1}) , summap_n{L+1}(n{L+1})) ;\nend generate;\n" 
+            T += "\n"
+            print(T)
+            VHD.write(T)
+
+        T="\n\nend arch_imp;\n\n"
+        print(T)
+
+
+        VHD.write(T)
+
+        VHD.close()
+
