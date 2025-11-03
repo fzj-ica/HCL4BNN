@@ -5,7 +5,6 @@ from genetic_algorithm.algorithm import GeneticAlgorithm
 
 if __name__ == "__main__":
     # GA parameters
-    mutation_prob = 0.05
     pop_size = 10       # small population for demo
     ngen = 5            # few generations
     n_samples = 128
@@ -17,14 +16,13 @@ if __name__ == "__main__":
         nn=nn, 
         pop_size=pop_size,
         ngen=ngen,
-        elite_size=2,
-        pool_nproc=12
+        elite_size=2
     )
 
     pop, log, hof = ga.run()
 
-    print("Best individual:", hof[0])
-    print("Best fitness:", ga.nn.fitness(hof[0]))
+    print("Best individual size:", int(ga.nn.eval_size(hof[0])*len(hof[0])) )
+    print("Best accuracy:", ga.nn.fitness(hof[0])[1])
     print("GA run complete.\n")
     # Example run for the HCL4BNN package
 

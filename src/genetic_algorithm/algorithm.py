@@ -16,14 +16,16 @@ class GeneticAlgorithm:
         Function to evaluate individual fitness.
     genome_length : int
         Number of genes in each individual.
+    pop_size : int
+        Population size.
     nmutbit : int
         Mutated bits per genome.
     mutation_prob : float
         Mutation probability per bit.
-    pop_size : int
-        Population size.
+    mutation_prob_indi : float
+        Mutation probability per individual.
     cxpb : float
-        Crossover probability.
+        Crossover probability. (TODO in pop vs. per bit)
     ngen : int
         Number of generations.
     elite_size : int
@@ -34,15 +36,21 @@ class GeneticAlgorithm:
                  nn, 
                  nmutbit: int = 3,
                  pop_size: int = 200, 
+                 tourn_size: int = 3, 
                  cxpb: float = 0.8, 
+                 cxpb_bit: float = 0.8, 
                  ngen: int = 10, 
                  elite_size: int = 2, 
-                 pool_nproc: int = None):
+                 pool_nproc: int = None
+                 ):
         self.nn = nn
         self.genome_length = nn.segm[-1]
         self.mutation_prob = nmutbit / self.genome_length
-        self.pop_size = pop_size
+        self.mutation_prob_indi = float(1)
         self.cxpb = cxpb
+        self.cxpb_bit = cxpb_bit
+        self.tourn_size = tourn_size
+        self.pop_size = pop_size
         self.ngen = ngen
         self.elite_size = elite_size
         self.pool_nproc = pool_nproc 
@@ -100,11 +108,12 @@ class GeneticAlgorithm:
             # offspring = list(map(toolbox.clone, offspring))
 
             # Apply crossover and mutation
-            offspring = algorithms.varAnd(offspring, toolbox, self.cxpb, self.mutation_prob)
+            offspring = algorithms.varAnd(offspring, toolbox, self.cxpb, self.mutation_prob_indi)
+
 
             # Vary the pool of individuals
             if len(population) > len(offspring):
-                fillers = algorithms.varAnd(offspring[:], toolbox, self.cxpb, self.mutation_prob)[:len(population) - len(offspring)]
+                fillers = algorithms.varAnd(offspring[:], toolbox, self.cxpb, self.mutation_prob_indi)[:len(population) - len(offspring)]
                 offspring.extend(fillers)
             if elites > 0:
                 old_best_idx = tools.selBest(population, elites)
@@ -150,7 +159,7 @@ class GeneticAlgorithm:
         else:
             pool = None
         
-        toolbox = create_toolbox(self.mutation_prob, self.evaluate, self.nn, pool=pool)
+        toolbox = create_toolbox(self.mutation_prob, self.cxpb_bit, self.tourn_size, self.evaluate, self.nn, pool=pool)
 
         print("Create init population...")
         time_start = time.time()
