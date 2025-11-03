@@ -39,7 +39,7 @@ class GeneticAlgorithm:
                  pop_size: int = 200, 
                  tourn_size: int = 3, 
                  cxpb: float = 0.8, 
-                 cxpb_bit: float = 0.8, 
+                 cxpb_bit: float = 0.5, 
                  ngen: int = 10, 
                  elite_size: int = 2, 
                  pool_nproc: int = None
@@ -168,7 +168,7 @@ class GeneticAlgorithm:
         else:
             pool = None
         print(f"Start GA, run for {self.ngen} generations ...")
-        print(f"    pop={self.pop_size}, cxpb={self.cxpb_bit}, mutpb/genome={self.mutation_prob*self.genome_length}, tourn_size={self.tourn_size}, elite_size={self.elite_size}, pool={self.pool_nproc} ")
+        print(f"    pop={self.pop_size}, cxpb={self.cxpb}, cxpb_bit={self.cxpb_bit}, mutpb/genome={self.mutation_prob*self.genome_length}, tourn_size={self.tourn_size}, elite_size={self.elite_size}, pool={self.pool_nproc} ")
         
         toolbox = create_toolbox(self.mutation_prob, self.cxpb_bit, self.tourn_size, self.evaluate, self.nn, pool=pool)
 
@@ -178,7 +178,7 @@ class GeneticAlgorithm:
         pop = toolbox.population(n=self.pop_size) # type: ignore
 
         # Stats & Hall of Fame
-        hof = tools.HallOfFame(self.elite_size)
+        hof = tools.HallOfFame(int(0.01*self.pop_size*self.ngen))
 
         mstats = create_multi_stats()
         

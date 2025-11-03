@@ -11,11 +11,12 @@ if __name__ == "__main__":
     n_frames = 200
 
     # GA parameters
-    pop_size = 300  
+    pop_size = 1000  
     ngen = 50 
     mutation_nbit = 5
-    tourn_size = 5
-    cxpb = 0.5
+    tourn_size = int(0.01*pop_size)
+    cxpb = 0.008
+    cxpb_bit = 0.5
     elite_size = 2
 
     # machine dependent
@@ -34,6 +35,7 @@ if __name__ == "__main__":
         elite_size = elite_size,
         tourn_size = tourn_size,
         cxpb = cxpb,
+        cxpb_bit = cxpb_bit,
         nmutbit = mutation_nbit,
         pool_nproc = pool_nproc
     )
@@ -43,7 +45,7 @@ if __name__ == "__main__":
         pop, log, hof = ga.run()
 
         print("Best individual size:", ga.nn.eval_size(hof[0]))
-        print("Best fitness:", ga.nn.fitness(hof[0]))
+        print("Best fitness:", ga.nn.evaluate(hof[0])[0])
         print("GA run complete.\n")
         # Example run for the HCL4BNN package
 
