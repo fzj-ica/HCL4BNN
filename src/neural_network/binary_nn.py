@@ -2,8 +2,7 @@ import numpy as np
 from typing import Tuple, Optional, List
 from datasets.base_dataset import BaseDataset
 from neural_network.base_nn import BaseNeuralNetwork
-from genetic_algorithm.utils import diversity
-from neural_network.utils import calc_accuracy
+from neural_network.utils import calc_accuracy, calc_diversity_score, calc_matching
 from datasets.sipm_dataset import SiPMDataset
 from datasets.utils import uint12_to_redint
 
@@ -278,27 +277,32 @@ class NN(BaseNeuralNetwork):
         a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
         return a  
 
-    def fitness(self, indi):
-        X_good, X_ugly = self.input.gen_good_ugly_data() # type: ignore
+    def fitness(self):
+        "returns accuracy, diversity_score, match_score, size_value"
+        waveforms, targets = self.input.load_data() # type: ignore
 
-        res_good = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_good)
-        res_ugly = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=X_ugly)
+        preds = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=waveforms)
+        not_all_same = np.int8(not( np.all([np.array_equal(x, preds[0]) for x in preds]) ))
         
-        acc = calc_accuracy(res_g=res_good, res_b=res_ugly, labels=self.input.load_data()[1])[0] # type: ignore
-        div = diversity(res_good, res_ugly)
+        acc = calc_accuracy(preds, targets, labels=self.input.LABLES)[0] * not_all_same # type: ignore
+        div = calc_diversity_score(preds, targets, labels=self.input.LABLES)
+        mat = calc_matching(preds, targets, labels=self.input.LABLES) * not_all_same
+        siz = self.eval_size(self.individual) 
 
-        return acc , div, self.eval_size(indi)
+        return acc, div, mat, siz
 
     def eval_size(self, individual):
         zero_genes = np.sum( [len(np.where( np.ravel( i )==0)[0]) for i in self.weights] )
-        return zero_genes  / ( len(individual)/2)
+        all_genes = np.sum( [len(np.ravel( i )) for i in self.weights] )
+        return zero_genes / all_genes
 
 
     def evaluate(self, x, y=None):
         indi = x
+        self.individual = indi
         self.set_weights(indi)
         self.set_summap(indi)
-        return self.fitness(indi)
+        return self.fitness()
 
     # ========================
     # individual's conversions
