@@ -5,7 +5,7 @@ def create_toolbox(mutation_prob, cxpb, tourn_size, eval_func, nn, pool=None):
     # if not hasattr(creator, "FitnessMax"):
     #     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     if not hasattr(creator, "FitnessMaxSmall"):
-        creator.create("FitnessMaxSmall", base.Fitness, weights=(10.0, 1.0, 0.1))
+        creator.create("FitnessMaxSmall", base.Fitness, weights=(10.0, 0.1, 1.0, 1.0))
     if not hasattr(creator, "Individual"):
         creator.create("Individual", list, fitness=creator.FitnessMaxSmall)  # type: ignore
 
