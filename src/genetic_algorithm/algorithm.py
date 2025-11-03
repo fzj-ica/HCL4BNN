@@ -58,8 +58,9 @@ class GeneticAlgorithm:
     
 
     def evaluate(self, indi):
-        fit, div, eval_size = self.nn.evaluate(indi)
-        return fit * div, fit, eval_size
+        acc, div, mat, eval_size = self.nn.evaluate(indi)
+        return mat, acc, eval_size
+        # return acc, mat * div, eval_size # blocked by broken-clock
         
 
     def _ea_simple_with_elitism(self, population, toolbox, stats=None, 
