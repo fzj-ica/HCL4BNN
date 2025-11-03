@@ -98,8 +98,8 @@ class NN(BaseNeuralNetwork):
         self.description = description or "NN"
         
         # Convert individual to weights and sum maps
-        self.weights = self.conv_from_indi_to_wght(individual)
-        self.summap = self.conv_from_indi_to_summap(individual)
+        self.weights = self.conv_from_indi_to_wght(self.individual)
+        self.summap = self.conv_from_indi_to_summap(self.individual)
 
     def set_weights(self, indi) -> None:
         """Return the weight matrices for each layer."""
