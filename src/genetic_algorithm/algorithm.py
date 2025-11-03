@@ -81,7 +81,8 @@ class GeneticAlgorithm:
             (final_population, logbook)
         """
         logbook = tools.Logbook()
-        logbook.header = ['gen', 'nevals'] + (stats.fields if stats else []) # type: ignore
+        # logbook.header = ['gen', 'nevals'] + (stats.fields if stats else []) # type: ignore
+        logbook.header = (stats.fields if stats else []) # type: ignore
         logbook.genlog = [] # type: ignore
 
         # Evaluate initial population
@@ -158,6 +159,8 @@ class GeneticAlgorithm:
             pool = multiprocessing.Pool(self.pool_nproc)
         else:
             pool = None
+        print(f"Start GA, run for {self.ngen} generations ...")
+        print(f"    pop={self.pop_size}, cxpb={self.cxpb_bit}, mutpb/genome={self.mutation_prob*self.genome_length}, tourn_size={self.tourn_size}, elite_size={self.elite_size}, pool={self.pool_nproc} ")
         
         toolbox = create_toolbox(self.mutation_prob, self.cxpb_bit, self.tourn_size, self.evaluate, self.nn, pool=pool)
 
