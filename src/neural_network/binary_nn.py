@@ -286,6 +286,7 @@ class NN(BaseNeuralNetwork):
         waveforms, self.targets = self.input.load_data() # type: ignore
 
         self.predictions = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=waveforms)
+        return waveforms # not saved in object, but available if needed
         
         
     def fitness(self):
