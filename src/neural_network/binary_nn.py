@@ -281,17 +281,27 @@ class NN(BaseNeuralNetwork):
         a = np.fromiter((np.digitize(val, b) for val, b in zip(neuron_sum, bin_edges)), dtype=np.uint8)
         return a  
 
-    def fitness(self):
+    def eval_predictions_targets(self):
         "returns accuracy, diversity_score, match_score, size_value"
-        waveforms, targets = self.input.load_data() # type: ignore
+        waveforms, self.targets = self.input.load_data() # type: ignore
 
-        preds = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=waveforms)
+        self.predictions = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=waveforms)
+        
+        
+    def fitness(self):
+        self.eval_predictions_targets()
+        preds = self.predictions
+        targets = self.targets
+        
         not_all_same = np.int8(not( np.all([np.array_equal(x, preds[0]) for x in preds]) ))
         
-        acc = calc_accuracy(preds, targets, labels=self.input.LABLES)[0] * not_all_same # type: ignore
-        div = calc_diversity_score(preds, targets, labels=self.input.LABLES)
+        acc, cm = calc_accuracy(preds, targets, labels=self.input.LABLES) # type: ignore
+        acc = acc * not_all_same
+        div = calc_diversity_score(preds, targets, labels=self.input.LABLES) # type: ignore
         mat = calc_matching(preds, targets, labels=self.input.LABLES) * not_all_same
         siz = self.eval_size(self.individual) 
+
+        self.cm = cm
 
         return acc, div, mat, siz
 
