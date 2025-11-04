@@ -25,7 +25,7 @@ def create_multi_stats():
     stats3.register("max",  lambda x: round(max(x), 3))
     
     # Combine
-    mstats = tools.MultiStatistics(fitness=stats, divers=stats2, size=stats3)
+    mstats = tools.MultiStatistics(match=stats, accuracy=stats2, size=stats3)
     return mstats
 
 def diversity(pop):

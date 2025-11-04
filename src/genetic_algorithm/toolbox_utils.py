@@ -1,11 +1,11 @@
 from deap import base, creator, tools
 import numpy as np
 
-def create_toolbox(mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
+def create_toolbox(mutation_prob, cxpb, tourn_size, eval_func, nn, pool=None):
     # if not hasattr(creator, "FitnessMax"):
     #     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     if not hasattr(creator, "FitnessMaxSmall"):
-        creator.create("FitnessMaxSmall", base.Fitness, weights=(10.0, 1.0, 0.1))
+        creator.create("FitnessMaxSmall", base.Fitness, weights=(10.0, 0.1, 1.0))
     if not hasattr(creator, "Individual"):
         creator.create("Individual", list, fitness=creator.FitnessMaxSmall)  # type: ignore
 
@@ -14,11 +14,14 @@ def create_toolbox(mutation_prob, eval_func, nn, tourn_size = 3, pool=None):
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.attr_bool_segmented) # type: ignore
     toolbox.register("population", tools.initRepeat, list, toolbox.individual) # type: ignore
     toolbox.register("evaluate", eval_func)
-    toolbox.register("mate", tools.cxUniform, indpb=0.5)
+    toolbox.register("mate", tools.cxUniform, indpb=cxpb)
     toolbox.register("mutate", tools.mutFlipBit, indpb=mutation_prob)
     toolbox.register("select", tools.selTournament, tournsize=tourn_size)
-    # toolbox.register("map", pool.map if pool else map)
+    if pool:
+        toolbox.register("map", pool.map)
+        toolbox.pool = pool  # attach pool object for later access
     return toolbox
+
 
 def rand_indi_segmented(ps, n_layer, segm):
     arr = np.asarray(ps)

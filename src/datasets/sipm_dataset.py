@@ -8,6 +8,7 @@ class SiPMDataset(BaseDataset):
     def __init__(self, n_samples: int = 128, n_frames: int = 50, min_amp: int = 10):
         self.ADC_BITS = 12
         self.ADC_SAMPLES = n_samples
+        self.n_samples = n_samples
         self.ADC_MIN = 0
 
         self.ADC_MAX = 2 ** self.ADC_BITS - 1
