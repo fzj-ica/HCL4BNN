@@ -47,7 +47,7 @@ class GeneticAlgorithm:
         self.nn = nn
         self.genome_length = nn.segm[-1]
         self.mutation_prob = nmutbit / self.genome_length
-        self.mutation_prob_indi = float(1)
+        self.mutation_prob_indi = 1.0
         self.cxpb = cxpb
         self.cxpb_bit = cxpb_bit
         self.tourn_size = tourn_size
@@ -179,7 +179,7 @@ class GeneticAlgorithm:
         pop = toolbox.population(n=self.pop_size) # type: ignore
 
         # Stats & Hall of Fame
-        hof = tools.HallOfFame(int(0.01*self.pop_size*self.ngen))
+        hof = tools.HallOfFame(max(2,int(0.01*self.pop_size*self.ngen)))
 
         mstats = create_multi_stats()
         
