@@ -100,8 +100,8 @@ class NN(BaseNeuralNetwork):
         self.summap = self.conv_from_indi_to_summap(self.individual)
 
         self.description = description or "Classifier"
-        self.title_str = f"{self.description} Net: {"-".join(map(str,self.NN))}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit"
-        self.file_str = f"{self.description}_NN_" + "-".join(map(str,self.NN)) + f"__inp-neur-wght_bits__{inp_len}-{neur_len}-{wght_len}"
+        self.title_str = f"{self.description} Net: {'-'.join(map(str,self.NN))}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit"
+        self.file_str = f"{self.description}_NN_{'-'.join(map(str,self.NN))}__inp-neur-wght_bits__{inp_len}-{neur_len}-{wght_len}"
                
 
     def set_weights(self, indi) -> None:
@@ -113,7 +113,7 @@ class NN(BaseNeuralNetwork):
         self.summap = self.conv_from_indi_to_summap(indi)
 
     def __str__(self) -> str:
-        return f"{self.description} Net: {"-".join(map(str,self.NN))}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit"
+        return f"{self.description} Net: {'-'.join(map(str,self.NN))}, Weights: {self.wght_len}-bit, Neurons: {self.neur_len}-bit"
 
 
     
