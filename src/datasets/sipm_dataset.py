@@ -24,6 +24,8 @@ class SiPMDataset(BaseDataset):
         self.n_frames = n_frames
         self.min_amp = min_amp
 
+    def prep_input(self, uint12_inp) -> np.ndarray:
+        return uint12_to_redint(uint12_inp, adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX, num_bits = 7)
 
     # =============================
     # Core Signal Functions
@@ -202,24 +204,30 @@ class SiPMDataset(BaseDataset):
         """
         n = self.n_frames * 20
 
-        # X_good = np.array([uint12_to_redint(self.sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX) for _ in range(self.n_frames * 20)])
+        # X_good = np.array([self.prep_input(self.sipm_adc()[1]) for _ in range(self.n_frames * 20)])
         X_good = np.empty((n, self.ADC_SAMPLES), dtype=np.uint8)
         for i in range(n):
-            X_good[i,:] = uint12_to_redint(self.sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX)
+            X_good[i,:] = self.prep_input(self.sipm_adc()[1])
         
-        # X_ugly = np.array([uint12_to_redint(self.double_sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX) for _ in range(self.n_frames * 20)])
+        # X_ugly = np.array([self.prep_input(self.double_sipm_adc()[1]) for _ in range(self.n_frames * 20)])
         X_ugly = np.empty((n, self.ADC_SAMPLES), dtype=np.uint8)
         for i in range(n):
-            X_ugly[i,:] = uint12_to_redint(self.double_sipm_adc()[1], adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX)
+            X_ugly[i,:] = self.prep_input(self.double_sipm_adc()[1])
 
         X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
         X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames)
         
         return X_good, X_ugly
+    
+
 
     # === BaseDataset API ===
     def load_data(self):
         return self.generate_waveforms()
+
+    def rand_inp(self):
+        return np.random.randint(low=self.prep_input(self.ADC_ZERO), high=self.prep_input(self.ADC_MAX), size=self.ADC_SAMPLES)
+
 
     def get_input_dim(self):
         return self.ADC_SAMPLES
