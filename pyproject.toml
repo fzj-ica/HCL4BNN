@@ -22,12 +22,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+main = [
+    "pandas>=2.3.3",
+    "jupyterlab>=4.4.10",
+    "matplotlib>=3.9",
+]
 dev = [
-    # pandas
     "ipykernel>=4.0.1",
     "ipython>=8.18",
     "scipy>=1.13",
-    "matplotlib>=3.9",
 ]
 
 [build-system]
