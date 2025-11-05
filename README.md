@@ -28,6 +28,28 @@ pip install -e .[dev]
 └── README.md            # Project overview and usage instructions  
 ```
 
+## Source Strutcture
+```bash
+each with __init__.py
+
+src/
+├── datasets             #
+│   ├── base_dataset.py  # Abstract Class
+│   ├── sipm_dataset.py  # SiPMDataset Class, load_data()
+│   └── utils.py         #
+├── genetic_algorithm    #
+│   ├── algorithm.py     # GeneticAlgorithm Class, .run() for optimization 
+│   ├── toolbox_utils.py # for deap Toolbox(), rand_indi_segmented() 
+│   ├── statistics.py    # for deap Stats() 
+│   └── utils.py         # confusion_matrix() 
+└── neural_network       #
+    ├── base_nn.py       # Abstract Class
+    ├── binary_nn.py     # NN Class: .run_nn() for inference, .write_VHDL() for conversion
+    ├── utils.py         # calc_...() evaluation-related functions
+    └── BNN.vhd          # VHDL package for BNN_entity.vhd
+
+```
+
 ## Usage
 
 ### `notebooks/example_run.ipynb`
