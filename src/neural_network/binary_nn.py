@@ -282,11 +282,14 @@ class NN(BaseNeuralNetwork):
         return a  
 
     def eval_predictions_targets(self):
-        "returns accuracy, diversity_score, match_score, size_value"
         waveforms, self.targets = self.input.load_data() # type: ignore
 
         self.predictions = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=waveforms)
         return waveforms # not saved in object, but available if needed
+        
+    def eval_input(self, waveforms):
+        predictions = np.apply_along_axis(func1d=self.run_nn, axis=1, arr=waveforms)
+        return predictions # not saved in object
         
         
     def fitness(self):

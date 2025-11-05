@@ -13,6 +13,11 @@ class BaseDataset(ABC):
         pass
 
     @abstractmethod
+    def rand_inp(self) -> np.ndarray:
+        """Generate random unit of this dataset. Returns (y)."""
+        pass
+
+    @abstractmethod
     def get_input_dim(self) -> int:
         """Return input dimension (for NN layer sizing)."""
         pass
