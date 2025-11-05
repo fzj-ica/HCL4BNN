@@ -5,7 +5,8 @@ description = "LUT-based neural network optimized with a genetic algorithm (BNN)
 readme = "README.md"
 authors = [
     {name = "Alperen Aksoy", email = "a.aksoy@fz-juelich.de"},
-    {name = "Ilja Bekman", email = "i.bekman@fz-juelich.de"}
+    {name = "Ilja Bekman", email = "i.bekman@fz-juelich.de"},
+    {name = "Sarah Fleitmann", email = "s.fleitmann@fz-juelich.de"}
 ]
 requires-python = ">=3.10"
 keywords = ["sipm", "neural network", "genetic algorithm", "simulation", "bnn", "binarized neural network"]
