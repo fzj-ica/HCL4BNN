@@ -28,6 +28,7 @@ main = [
     "matplotlib>=3.9",
 ]
 dev = [
+    # pandas
     "ipykernel>=4.0.1",
     "ipython>=8.18",
     "scipy>=1.13",
