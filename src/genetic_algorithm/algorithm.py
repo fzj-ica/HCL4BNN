@@ -1,3 +1,32 @@
+#    This file contains a modified function from DEAP.
+#
+#    DEAP is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License as
+#    published by the Free Software Foundation, either version 3 of
+#    the License, or (at your option) any later version.
+#
+#    DEAP is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#    GNU Lesser General Public License for more details.
+#
+#    You should have received a copy of the GNU Lesser General Public
+#    License along with DEAP. If not, see <http://www.gnu.org/licenses/>.
+#***************************************************************************************************
+#    Downloaded September 23, 2025 from
+#    https://github.com/DEAP/deap/blob/e4f816a7dfbad0de058bb381b71c3c3818e98a53/deap/algorithms.py
+#***************************************************************************************************
+#
+#    HCL4BNN - Hardware-Constrained Learning for binary neural networks
+#    Modifications Copyright (C) 2025 Forschungszentrum Juelich GmbH, PGI-4 ICA
+#    For the license applied to these modifications and HCL4BNN as a whole
+#    refer to file ../../LICENSE
+#
+#    2025-09-23: Original function eaSimple modified for usage in weight optimzation
+#
+#***************************************************************************************************
+
+
 from typing import List, Optional, Tuple
 from deap import tools, algorithms
 import multiprocessing
