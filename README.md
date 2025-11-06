@@ -1,4 +1,4 @@
-# Hardware-Constrained Learning for BNNs - Python package
+# Hardware-Constrained Learning for binary neural networks - Python package
 
 A Python package for training BNNs with Genetic Algorithm.
 
@@ -20,7 +20,6 @@ pip install -e .[dev]
 ## Project Structure
 ``` bash
 .
-├── docs/                # Sphinx Documentation
 ├── src/                 # Main source code of the project (Python package)  
 ├── notebooks/           # Jupyter notebooks for demos and analysis  
 ├── .gitignore           # Git ignore rules for untracked files and directories  
@@ -56,7 +55,7 @@ src/
 This is an example for a full very coarse training with monitoring and result plots.
 
 ### `notebooks/example_run.py`
-This is truncated version of above as an non-interactive example for e.g. cluster running.
+This is truncated version of above as a non-interactive example for e.g. cluster running.
 
 ### `notebooks/sipm_signals.ipynb`
 This is a demo of the used simulated SiPM signals.
