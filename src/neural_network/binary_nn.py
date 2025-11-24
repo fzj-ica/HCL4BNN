@@ -497,10 +497,10 @@ constant NN_width: t_NN_layout := ({", ".join([f"{i}-1" for i in NN])});
 
 
         T="\nattribute KEEP : string;\n"
-        T += f"{"" if keep_l[0] else "-- "}attribute KEEP of layer_n{0} : signal is \"TRUE\";\n"
+        T += f"{'' if keep_l[0] else '-- '}attribute KEEP of layer_n{0} : signal is \"TRUE\";\n"
         for L in range(1,len(NN)-1):
-            T += f"{"" if keep_l[L] else "-- "}attribute KEEP of layer_n{L} : signal is \"TRUE\";\n"
-        T += f"{"" if keep_l[len(NN)-1] else "-- "}attribute KEEP of layer_n{len(NN)-1} : signal is \"TRUE\";\n"
+            T += f"{'' if keep_l[L] else '-- '}attribute KEEP of layer_n{L} : signal is \"TRUE\";\n"
+        T += f"{'' if keep_l[len(NN)-1] else '-- '}attribute KEEP of layer_n{len(NN)-1} : signal is \"TRUE\";\n"
 
         print(T)
 
