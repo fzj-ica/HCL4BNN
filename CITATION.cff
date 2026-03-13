@@ -1,0 +1,31 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: HCL4BNN
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Alperen
+    family-names: Aksoy
+    email: a.aksoy@fz-juelich.de
+    affiliation: Forschungszentrum Jülich GmbH
+    orcid: 'https://orcid.org/0009-0001-3734-2157'
+  - given-names: Ilja
+    family-names: Bekman
+    email: i.bekman@fz-juelich.de
+    affiliation: Forschungszentrum Jülich GmbH
+    orcid: 'https://orcid.org/0000-0001-7562-3059'
+identifiers:
+  - type: url
+    value: 'https://github.com/fzj-ica/HCL4BNN'
+abstract: A Python package for training BNNs with Genetic Algorithm.
+keywords:
+  - Binary Neural Network
+  - Genetic Algorithm
+  - Quantized Neural Network
+license: LGPL-3.0
+version: Pub
+date-released: '2025-11-06'
