@@ -1,11 +1,17 @@
 from typing import Tuple
 import numpy as np
-import random
+# import random
 from .base_dataset import BaseDataset
 from .utils import distill_uniform, uint12_to_redint, uint12_to_therm
 
 class SiPMDataset(BaseDataset):
-    def __init__(self, n_samples: int = 128, n_frames: int = 50, min_amp: int = 10):
+    def __init__(self, 
+                 n_samples: int = 128,  # number of samples in the frame
+                 n_frames: int = 50, # number of frames per evaluation
+                 min_amp: int = 10, # filter for too low amplitudes
+                 seed: int | None = None, 
+                 static: bool = False # regenerate new frames on each load or reuse stored in self.X and self.y
+                ):
         self.ADC_BITS = 12
         self.ADC_SAMPLES = n_samples
         self.n_samples = n_samples
@@ -19,6 +25,11 @@ class SiPMDataset(BaseDataset):
         self.LABLE_OTHER = "Either"
         self.OUTCOMES = [[1,0], [0,1]]
         self.DICT_TUPLE_TO_LABEL = dict( zip([tuple(l) for l in self.OUTCOMES], self.LABLES) )
+
+        self.static = static
+        self.seed = seed
+        self._rng = np.random.default_rng(self.seed)
+        self.X, self.y = None, None
 
         # parameters for load_data relevant for Fitness
         self.n_frames = n_frames
@@ -81,9 +92,9 @@ class SiPMDataset(BaseDataset):
     # =============================
     def sipm_wf(self) -> Tuple[np.ndarray, np.ndarray]:
         """Generate analog SiPM waveform with fine sampling."""
-        chrg: float = random.uniform(0.1,1)
+        chrg: float = self._rng.uniform(0.1,1)
         amp: float =  chrg * (self.ADC_MAX-self.ADC_ZERO) * 1.3
-        par: list[float] = [amp, 4, 14*chrg*random.uniform(1.0,1.4)]
+        par: list[float] = [amp, 4, 14*chrg*self._rng.uniform(1.0,1.4)]
         Dx: np.ndarray = np.linspace(-1, self.ADC_SAMPLES-1, 500)
         Dy: np.ndarray = self.isg(Dx, par) + self.ADC_ZERO
         Dx: np.ndarray = Dx - Dx[0]
@@ -91,9 +102,9 @@ class SiPMDataset(BaseDataset):
 
     def sipm_adc(self) -> Tuple[np.ndarray, np.ndarray]:
         """Generate digitised SiPM waveform (ADC samples)."""
-        chrg = random.uniform(0.1, 1)
+        chrg = self._rng.uniform(0.1, 1)
         amp =  chrg * (self.ADC_MAX - self.ADC_ZERO) * 1.3
-        par = [amp, 4 * random.uniform(0.6, 1.5), 14 * chrg * random.uniform(0.2, 1.4)]
+        par = [amp, 4 * self._rng.uniform(0.6, 1.5), 14 * chrg * self._rng.uniform(0.2, 1.4)]
         Dx = np.linspace(-1, self.ADC_SAMPLES-2, self.ADC_SAMPLES)
         Dy = self.isg(Dx, par) + self.ADC_ZERO 
         Dx = Dx - Dx[0]
@@ -103,9 +114,9 @@ class SiPMDataset(BaseDataset):
 
     def nois_adc(self) -> Tuple[np.ndarray, np.ndarray]:
         """Generate digitised noise waveform (ADC samples)."""
-        chrg = random.uniform(0.8,1)
+        chrg = self._rng.uniform(0.8,1)
         amp =  chrg * (self.ADC_MAX*0.01)
-        par = [amp, 0.001 * chrg * random.uniform(1.0,1.4)]
+        par = [amp, 0.001 * chrg * self._rng.uniform(1.0,1.4)]
         Dx = np.linspace(-1, self.ADC_SAMPLES-2, self.ADC_SAMPLES)
         Dy = self.nois(Dx, par) + self.ADC_ZERO 
         Dx = Dx - Dx[0]
@@ -128,7 +139,7 @@ class SiPMDataset(BaseDataset):
             - Assumes `sipm_adc` and `ADC_ZERO` are defined elsewhere in the module.
         """
         x, y = self.sipm_adc()
-        x_new = np.random.randint(5, 30)
+        x_new = self._rng.integers(5, 30)
         y_new = self.sipm_adc()[1]
         y[x_new:] += y_new[:len(x)-x_new] - self.ADC_ZERO
         return x, y
@@ -214,8 +225,8 @@ class SiPMDataset(BaseDataset):
         for i in range(n):
             X_ugly[i,:] = self.prep_input(self.double_sipm_adc()[1])
 
-        X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames)
-        X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames)
+        X_good = distill_uniform(X_good, min_amp=self.min_amp, sample_size=self.n_frames, rng=self._rng)
+        X_ugly = distill_uniform(X_ugly, min_amp=self.min_amp, sample_size=self.n_frames, rng=self._rng)
         
         return X_good, X_ugly
     
@@ -223,6 +234,11 @@ class SiPMDataset(BaseDataset):
 
     # === BaseDataset API ===
     def load_data(self):
+        if self.static:
+            if self.X is None or self.y is None or len(self.X) != len(self.y):
+                # print("Bad input, regenerating input data!")
+                self.X, self.y = self.generate_waveforms()
+            return self.X, self.y
         return self.generate_waveforms()
 
     def rand_inp(self):

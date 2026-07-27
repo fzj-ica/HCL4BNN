@@ -1,6 +1,6 @@
 import numpy as np
 
-def distill_uniform(arr, min_amp=10, sample_size=100, num_bins: int = 50):
+def distill_uniform(arr, min_amp=10, sample_size=100, num_bins: int = 50, rng = np.random.default_rng()):
     arr = arr[np.max(arr, axis=1) >= min_amp] # Here arr contains 8 and therefore has no elem after this
     maxima = np.max(arr, axis=1)
     bins = np.linspace(np.min(maxima), np.max(maxima), num_bins + 1)
@@ -8,7 +8,7 @@ def distill_uniform(arr, min_amp=10, sample_size=100, num_bins: int = 50):
     weights = 1.0 / np.bincount(idx, minlength=num_bins)[idx]
     weights /= np.sum(weights)
     
-    return arr[np.random.choice(len(arr), size=sample_size, p=weights)]
+    return arr[rng.choice(len(arr), size=sample_size, p=weights)]
 
 # =============================
 # Encoding Helpers
