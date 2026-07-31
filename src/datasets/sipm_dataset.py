@@ -78,6 +78,12 @@ class SiPMDataset(BaseDataset):
         # parameters for load_data relevant for Fitness
         self.n_frames = n_frames
         self.min_amp = min_amp
+        if static:
+            self.self_set_data()
+
+    def self_set_data(self):
+        # Generate data
+        self.X, self.y = self.generate_waveforms()
 
     def prep_input(self, uint12_inp) -> np.ndarray:
         return uint12_to_redint(uint12_inp, adc_zero=self.ADC_ZERO, adc_max=self.ADC_MAX, num_bits = 7)
@@ -278,13 +284,10 @@ class SiPMDataset(BaseDataset):
 
     # === BaseDataset API ===
     def load_data(self):
-        if self.static:
-            if self.X is None or self.y is None or len(self.X) != len(self.y):
-                # print("Bad input, regenerating input data!")
-                self.X, self.y = self.generate_waveforms()
-            return self.X, self.y
-        return self.generate_waveforms()
-
+        if not self.static:
+            self.self_set_data()        
+        return self.X, self.y
+        
     def rand_inp(self):
         return np.random.randint(low=self.prep_input(self.ADC_ZERO), high=self.prep_input(self.ADC_MAX), size=self.ADC_SAMPLES)
 
