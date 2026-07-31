@@ -1,16 +1,60 @@
 from typing import Tuple
 import numpy as np
-# import random
 from .base_dataset import BaseDataset
 from .utils import distill_uniform, uint12_to_redint, uint12_to_therm
-
 class SiPMDataset(BaseDataset):
+    """
+    Dataset generator for simulated SiPM (Silicon Photomultiplier) pulse waveforms.
+
+    Generates "good" (single, isolated pulse) and "ugly" (overlapping
+    or distorted multi-pulse) SiPM-like waveforms constructed from two exponentials;
+    digitization as ADC samples as well as unary thermometer code is emulated.
+
+    Parameters
+    ----------
+    n_samples : int, optional
+        Number of ADC samples per waveform frame (default: 128).
+    n_frames : int, optional
+        Number of "good"/"ugly" waveforms generated per class on each call to
+        `load_data` (default: 50).
+    min_amp : int, optional
+        Minimum peak amplitude, in ADC counts above baseline, required for a
+        generated waveform to be accepted. Used to filter out waveforms whose
+        signal is too weak to be usable (default: 10).
+    seed : int or None, optional
+        Random seed for reproducible waveform generation. If None, generation
+        is non-deterministic and differs between calls/runs (default: None).
+    static : bool, optional
+        If True, waveforms are generated once (on first call to `load_data`)
+        and cached in `self.X`/`self.y`; subsequent calls return the same
+        stored frames instead of regenerating new random waveforms. If False,
+        a fresh set of frames is drawn on every call (default: False).
+
+    Attributes
+    ----------
+    ADC_BITS : int
+        Bit depth of the simulated ADC (12 bits).
+    ADC_SAMPLES : int
+        Number of samples per frame; equals `n_samples`.
+    ADC_MIN, ADC_MAX, ADC_ZERO : int
+        Minimum, maximum, and baseline (zero-signal) ADC codes.
+    LABLES : list of str
+        Class labels, ``["Good", "Ugly"]``.
+    OUTCOMES : list of list of int
+        Target class-vector encodings corresponding to `LABLES`.
+    n_frames : int
+    min_amp : int
+    seed : int or None
+    static : bool
+    X, y: list of int
+        cached data and labels
+    """
     def __init__(self, 
-                 n_samples: int = 128,  # number of samples in the frame
-                 n_frames: int = 50, # number of frames per evaluation
-                 min_amp: int = 10, # filter for too low amplitudes
+                 n_samples: int = 128,
+                 n_frames: int = 50,
+                 min_amp: int = 10,
                  seed: int | None = None, 
-                 static: bool = False # regenerate new frames on each load or reuse stored in self.X and self.y
+                 static: bool = False
                 ):
         self.ADC_BITS = 12
         self.ADC_SAMPLES = n_samples
