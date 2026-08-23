@@ -27,7 +27,7 @@ pip install -e .[dev]
 └── README.md            # Project overview and usage instructions  
 ```
 
-## Source Strutcture
+## Source Structure
 ```bash
 each with __init__.py
 
